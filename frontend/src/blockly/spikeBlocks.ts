@@ -4,6 +4,7 @@
  */
 import * as Blockly from 'blockly';
 import { pythonGenerator } from 'blockly/python';
+import { simToolboxCategories } from './simBlocks';
 
 // ===== Custom Block Definitions =====
 
@@ -1373,6 +1374,7 @@ export const toolbox = {
       colour: '290',
       custom: 'PROCEDURE',
     },
+    ...simToolboxCategories,
   ],
 };
 

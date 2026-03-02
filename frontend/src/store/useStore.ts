@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type EditorMode = 'python' | 'blocks';
+export type EditorMode = 'python' | 'blocks' | 'c';
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'disconnecting';
 export type HubStatus = 'idle' | 'running' | 'error';
 
@@ -10,6 +10,7 @@ export interface Program {
   name: string;
   pythonCode: string;
   blocklyXml: string;
+  cCode?: string;
   mode: EditorMode;
   createdAt: number;
   updatedAt: number;
@@ -31,6 +32,8 @@ interface AppState {
   setPythonCode: (code: string) => void;
   blocklyXml: string;
   setBlocklyXml: (xml: string) => void;
+  cCode: string;
+  setCCode: (code: string) => void;
 
   // Programs / File management
   programs: Program[];
@@ -65,6 +68,9 @@ interface AppState {
   toggleDarkMode: () => void;
   showAIChat: boolean;
   toggleAIChat: () => void;
+  simulationMode: boolean;
+  setSimulationMode: (enabled: boolean) => void;
+  toggleSimulationMode: () => void;
 }
 
 const DEFAULT_PYTHON_CODE = `from pybricks.hubs import PrimeHub
@@ -92,6 +98,15 @@ wait(3000)
 hub.speaker.beep()
 `;
 
+const DEFAULT_C_CODE = `#include <pbio/drivebase.h>
+#include <pbio/error.h>
+#include <pbio/motor.h>
+
+int main(void) {
+  return 0;
+}
+`;
+
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
@@ -104,6 +119,8 @@ export const useStore = create<AppState>()(
       setPythonCode: (code) => set({ pythonCode: code }),
       blocklyXml: '',
       setBlocklyXml: (xml) => set({ blocklyXml: xml }),
+      cCode: DEFAULT_C_CODE,
+      setCCode: (code) => set({ cCode: code }),
 
       // Programs
       programs: [],
@@ -154,6 +171,9 @@ export const useStore = create<AppState>()(
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       showAIChat: false,
       toggleAIChat: () => set((state) => ({ showAIChat: !state.showAIChat })),
+      simulationMode: false,
+      setSimulationMode: (simulationMode) => set({ simulationMode }),
+      toggleSimulationMode: () => set((state) => ({ simulationMode: !state.simulationMode })),
     }),
     {
       name: 'pybricks-ide-storage',
@@ -162,12 +182,14 @@ export const useStore = create<AppState>()(
         editorMode: state.editorMode,
         pythonCode: state.pythonCode,
         blocklyXml: state.blocklyXml,
+        cCode: state.cCode,
         programs: state.programs,
         currentProgramId: state.currentProgramId,
         darkMode: state.darkMode,
         showTerminal: state.showTerminal,
         showFileExplorer: state.showFileExplorer,
         showAIChat: state.showAIChat,
+        simulationMode: state.simulationMode,
       }),
     },
   ),

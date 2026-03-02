@@ -10,10 +10,13 @@ const StatusBar: React.FC = () => {
     batteryLevel,
     editorMode,
     pythonCode,
+    blocklyXml,
+    cCode,
   } = useStore();
 
-  const lineCount = pythonCode.split('\n').length;
-  const charCount = pythonCode.length;
+  const activeCode = editorMode === 'c' ? cCode : editorMode === 'blocks' ? blocklyXml : pythonCode;
+  const lineCount = activeCode.split('\n').length;
+  const charCount = activeCode.length;
 
   return (
     <div className="status-bar">
@@ -58,7 +61,11 @@ const StatusBar: React.FC = () => {
       <div className="status-bar-right">
         <div className="status-item">
           <span>
-            {editorMode === 'python' ? 'Python Editor' : 'Block Editor'}
+            {editorMode === 'python'
+              ? 'Python Editor'
+              : editorMode === 'c'
+              ? 'C Editor'
+              : 'Block Editor'}
           </span>
         </div>
         <div className="status-item">

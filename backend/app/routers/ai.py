@@ -74,7 +74,7 @@ class ChatResponse(BaseModel):
 def _pick_provider(requested: Optional[str] = None) -> str:
     """Return the provider to use. Priority: requested > gemini (free) > anthropic."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
-    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    gemini_key = _get_gemini_api_key()
 
     if requested == "anthropic" and anthropic_key:
         return "anthropic"
@@ -89,8 +89,12 @@ def _pick_provider(requested: Optional[str] = None) -> str:
 
     raise HTTPException(
         status_code=500,
-        detail="No AI API key configured. Set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY.",
+        detail="No AI API key configured. Set GEMINI_API_KEY (or GOOGLE_API_KEY) or ANTHROPIC_API_KEY.",
     )
+
+
+def _get_gemini_api_key() -> str:
+    return os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
 
 
 def _build_messages(request: ChatRequest) -> list[dict]:
@@ -275,7 +279,7 @@ async def chat(request: ChatRequest):
 
     try:
         if provider == "gemini":
-            return await _gemini_chat(messages, os.getenv("GEMINI_API_KEY", ""))
+            return await _gemini_chat(messages, _get_gemini_api_key())
         else:
             return await _anthropic_chat(messages, os.getenv("ANTHROPIC_API_KEY", ""))
     except HTTPException:
@@ -295,7 +299,7 @@ async def chat_stream(request: ChatRequest):
     async def generate():
         try:
             if provider == "gemini":
-                async for chunk in _gemini_stream(messages, os.getenv("GEMINI_API_KEY", "")):
+                async for chunk in _gemini_stream(messages, _get_gemini_api_key()):
                     yield chunk
             else:
                 async for chunk in _anthropic_stream(messages, os.getenv("ANTHROPIC_API_KEY", "")):
@@ -310,7 +314,7 @@ async def chat_stream(request: ChatRequest):
 async def ai_status():
     """Check which AI providers are configured."""
     anthropic_key = bool(os.getenv("ANTHROPIC_API_KEY", ""))
-    gemini_key = bool(os.getenv("GEMINI_API_KEY", ""))
+    gemini_key = bool(_get_gemini_api_key())
 
     # Active provider follows the same logic as _pick_provider
     active = "gemini" if gemini_key else ("anthropic" if anthropic_key else None)

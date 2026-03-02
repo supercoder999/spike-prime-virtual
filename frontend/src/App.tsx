@@ -1,13 +1,15 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, lazy, Suspense } from 'react';
 import { useStore } from './store/useStore';
 import Toolbar from './components/Toolbar';
-import PythonEditor from './components/PythonEditor';
-import BlockEditor from './components/BlockEditor';
-import Terminal from './components/Terminal';
-import FileExplorer from './components/FileExplorer';
 import StatusBar from './components/StatusBar';
-import AIChatPanel from './components/AIChatPanel';
 import './App.css';
+
+const PythonEditor = lazy(() => import('./components/PythonEditor'));
+const BlockEditor = lazy(() => import('./components/BlockEditor'));
+const CEditor = lazy(() => import('./components/CEditor'));
+const Terminal = lazy(() => import('./components/Terminal'));
+const FileExplorer = lazy(() => import('./components/FileExplorer'));
+const AIChatPanel = lazy(() => import('./components/AIChatPanel'));
 
 /**
  * Generic resize hook — tracks mouse drag on a handle and updates a size value.
@@ -74,7 +76,9 @@ const App: React.FC = () => {
         {showFileExplorer && (
           <>
             <div className="file-explorer-wrapper" style={{ width: explorer.size }}>
-              <FileExplorer />
+              <Suspense fallback={null}>
+                <FileExplorer />
+              </Suspense>
             </div>
             <div className="resize-handle resize-handle-h" onMouseDown={explorer.onMouseDown} />
           </>
@@ -83,13 +87,25 @@ const App: React.FC = () => {
         {/* Editor + Terminal */}
         <div className="editor-area">
           <div className="editor-container">
-            {editorMode === 'python' ? <PythonEditor /> : <BlockEditor />}
+            <Suspense fallback={null}>
+              {editorMode === 'python' ? (
+                <PythonEditor />
+              ) : editorMode === 'blocks' ? (
+                <BlockEditor />
+              ) : editorMode === 'c' ? (
+                <CEditor />
+              ) : (
+                <PythonEditor />
+              )}
+            </Suspense>
           </div>
           {showTerminal && (
             <>
               <div className="resize-handle resize-handle-v" onMouseDown={terminal.onMouseDown} />
               <div className="terminal-wrapper" style={{ height: terminal.size }}>
-                <Terminal />
+                <Suspense fallback={null}>
+                  <Terminal />
+                </Suspense>
               </div>
             </>
           )}
@@ -100,7 +116,9 @@ const App: React.FC = () => {
           <>
             <div className="resize-handle resize-handle-h" onMouseDown={aiPanel.onMouseDown} />
             <div className="ai-chat-wrapper" style={{ width: aiPanel.size }}>
-              <AIChatPanel />
+              <Suspense fallback={null}>
+                <AIChatPanel />
+              </Suspense>
             </div>
           </>
         )}

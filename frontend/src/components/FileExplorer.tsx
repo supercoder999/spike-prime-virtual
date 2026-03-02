@@ -11,11 +11,13 @@ const FileExplorer: React.FC = () => {
     addProgram,
     setPythonCode,
     setBlocklyXml,
+    setCCode,
     setEditorMode,
     showFileExplorer,
     editorMode,
     pythonCode,
     blocklyXml,
+    cCode,
     renameProgram,
   } = useStore();
 
@@ -36,6 +38,7 @@ const FileExplorer: React.FC = () => {
     setCurrentProgram(program.id);
     setPythonCode(program.pythonCode);
     setBlocklyXml(program.blocklyXml);
+    setCCode(program.cCode || '');
     setEditorMode(program.mode);
   };
 
@@ -78,6 +81,7 @@ const FileExplorer: React.FC = () => {
       name,
       pythonCode: editorMode === 'python' ? pythonCode : '',
       blocklyXml: editorMode === 'blocks' ? blocklyXml : '',
+      cCode: editorMode === 'c' ? cCode : '',
       mode: editorMode,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -134,7 +138,7 @@ const FileExplorer: React.FC = () => {
                 <span className="file-name">{program.name}</span>
               )}
               <span className="file-mode">
-                {program.mode === 'python' ? '.py' : '.blk'}
+                {program.mode === 'python' ? '.py' : program.mode === 'c' ? '.c' : '.blk'}
               </span>
               <button
                 className="file-rename-btn"

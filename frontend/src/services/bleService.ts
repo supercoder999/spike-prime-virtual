@@ -95,6 +95,17 @@ export interface HubInfo {
 /** Small delay helper */
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const isLikelyGattTransientError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('gatt operation failed') ||
+    lower.includes('networkerror') ||
+    lower.includes('operation failed') ||
+    lower.includes('unknown reason')
+  );
+};
+
 /** Promise that rejects after a timeout */
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -112,7 +123,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 /** Connection timeout constants (ms) */
 const GATT_CONNECT_TIMEOUT = 15_000;
 const SERVICE_SETUP_TIMEOUT = 10_000;
-const OVERALL_CONNECT_TIMEOUT = 30_000;
 const MAX_CONNECT_RETRIES = 2;
 
 class BleService {
@@ -120,7 +130,6 @@ class BleService {
   private gattServer: BluetoothRemoteGATTServer | null = null;
   private connectAbortController: AbortController | null = null;
   private pybricksControlChar: BluetoothRemoteGATTCharacteristic | null = null;
-  private _uartRxChar: BluetoothRemoteGATTCharacteristic | null = null;
   private uartTxChar: BluetoothRemoteGATTCharacteristic | null = null;
   private hubCapabilitiesChar: BluetoothRemoteGATTCharacteristic | null = null;
   private eventCallbacks: BleEventCallback[] = [];
@@ -133,6 +142,7 @@ class BleService {
   private lastStatus = 0;
   private _previouslyRunning = false;
   private _useLegacyProtocol = false;
+  private preferWriteWithoutResponseForProgram = true;
   private writeQueue: Promise<void> = Promise.resolve();
 
   get isConnected(): boolean {
@@ -336,7 +346,6 @@ class BleService {
           }
           this.gattServer = null;
           this.pybricksControlChar = null;
-          this._uartRxChar = null;
           this.uartTxChar = null;
           this.hubCapabilitiesChar = null;
 
@@ -453,24 +462,75 @@ class BleService {
     }
 
     try {
+      if (this.maxUserProgramSize > 0 && compiledData.length > this.maxUserProgramSize) {
+        throw new Error(
+          `Program too large for hub (${compiledData.length} bytes > max ${this.maxUserProgramSize} bytes)`
+        );
+      }
+
       // Stop any currently running program first
       if (this.isProgramRunning) {
         await this.stopProgram();
         await this.waitForProgramStop(3000);
       }
 
-      this.emit({ type: 'info', data: 'Downloading program...' });
+      let completed = false;
+      let lastDownloadError: unknown;
 
-      // Step 1: Write meta with size 0 to clear previous program
-      await this.writeProgramMeta(0);
-      await delay(10);
+      for (let transferAttempt = 0; transferAttempt < 2; transferAttempt++) {
+        try {
+          this.emit({
+            type: 'info',
+            data: transferAttempt === 0 ? 'Downloading program...' : 'Retrying download...'
+          });
 
-      // Step 2: Write program data in chunks
-      await this.writeProgramData(compiledData);
-      await delay(10);
+          // Step 1: Clear previous program slot
+          await this.writeProgramMeta(0);
+          await delay(25);
 
-      // Step 3: Start the program
-      await this.startProgram(slot);
+          // Step 2: Set target program size before data upload
+          await this.writeProgramMeta(compiledData.length);
+          await delay(25);
+
+          // Step 3: Write program data in chunks
+          await this.writeProgramData(compiledData);
+          await delay(40);
+
+          // Step 4: Start the program (retry if BLE stack is briefly busy)
+          let started = false;
+          let lastStartError: unknown;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              await this.startProgram(slot);
+              started = true;
+              break;
+            } catch (error) {
+              lastStartError = error;
+              if (!isLikelyGattTransientError(error) || attempt === 2) {
+                throw error;
+              }
+              await delay(150 * (attempt + 1));
+            }
+          }
+
+          if (!started && lastStartError) {
+            throw lastStartError;
+          }
+
+          completed = true;
+          break;
+        } catch (error) {
+          lastDownloadError = error;
+          if (!isLikelyGattTransientError(error) || transferAttempt === 1) {
+            throw error;
+          }
+          await delay(250);
+        }
+      }
+
+      if (!completed && lastDownloadError) {
+        throw lastDownloadError;
+      }
 
       this.emit({ type: 'info', data: 'Program started!' });
     } catch (error) {
@@ -661,7 +721,7 @@ class BleService {
     try {
       const service = await this.gattServer!.getPrimaryService(NORDIC_UART_SERVICE_UUID);
 
-      this._uartRxChar = await service.getCharacteristic(NORDIC_UART_RX_CHAR_UUID);
+      await service.getCharacteristic(NORDIC_UART_RX_CHAR_UUID);
       this.uartTxChar = await service.getCharacteristic(NORDIC_UART_TX_CHAR_UUID);
 
       // Stop then start notifications (Linux BlueZ workaround)
@@ -772,7 +832,8 @@ class BleService {
    */
   private async writeProgramData(data: Uint8Array): Promise<void> {
     // Chunk size = max write size - 5 bytes overhead (1 cmd + 4 offset)
-    const chunkSize = Math.max(this.maxWriteSize - 5, 15);
+    // Use a very conservative cap for browser/OS BLE stack stability.
+    const chunkSize = Math.max(Math.min(this.maxWriteSize - 5, 15), 15);
     let offset = 0;
     const totalChunks = Math.ceil(data.length / chunkSize);
 
@@ -783,7 +844,35 @@ class BleService {
       new DataView(payload.buffer).setUint32(1, offset, true);
       payload.set(chunk, 5);
 
-      await this.serialWrite(this.pybricksControlChar!, payload);
+      let written = false;
+      let lastChunkError: unknown;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          if (this.preferWriteWithoutResponseForProgram) {
+            try {
+              await this.serialWrite(this.pybricksControlChar!, payload, false, 1);
+            } catch {
+              this.preferWriteWithoutResponseForProgram = false;
+              await this.serialWrite(this.pybricksControlChar!, payload, true, 3);
+            }
+          } else {
+            await this.serialWrite(this.pybricksControlChar!, payload, true, 3);
+          }
+          written = true;
+          break;
+        } catch (error) {
+          lastChunkError = error;
+          if (!isLikelyGattTransientError(error) || attempt === 3) {
+            throw error;
+          }
+          await delay(40 * (attempt + 1));
+        }
+      }
+
+      if (!written && lastChunkError) {
+        throw lastChunkError;
+      }
+
       offset += chunk.length;
 
       // Progress feedback
@@ -796,7 +885,7 @@ class BleService {
       }
 
       // Small delay between chunks to avoid BLE congestion
-      await delay(10);
+      await delay(25);
     }
   }
 
@@ -836,7 +925,6 @@ class BleService {
 
   private cleanup(): void {
     this.pybricksControlChar = null;
-    this._uartRxChar = null;
     this.uartTxChar = null;
     this.hubCapabilitiesChar = null;
     this.gattServer = null;

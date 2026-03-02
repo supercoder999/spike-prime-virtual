@@ -112,6 +112,7 @@ function renderMessage(content: string): React.ReactNode {
 function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
   const setPythonCode = useStore((s) => s.setPythonCode);
+  const setCCode = useStore((s) => s.setCCode);
   const editorMode = useStore((s) => s.editorMode);
 
   const handleCopy = async () => {
@@ -123,6 +124,8 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
   const handleInsert = () => {
     if (editorMode === 'python') {
       setPythonCode(code);
+    } else if (editorMode === 'c') {
+      setCCode(code);
     }
   };
 
@@ -164,8 +167,11 @@ const AIChatPanel: React.FC = () => {
     showAIChat,
     toggleAIChat,
     pythonCode,
+    cCode,
     editorMode,
   } = useStore();
+
+  const activeCode = editorMode === 'c' ? cCode : pythonCode;
 
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [input, setInput] = useState('');
@@ -250,7 +256,7 @@ const AIChatPanel: React.FC = () => {
         await streamChatMessage(
           {
             messages: history,
-            current_code: pythonCode,
+            current_code: activeCode,
             editor_mode: editorMode,
             stream: true,
           },
@@ -277,7 +283,7 @@ const AIChatPanel: React.FC = () => {
                 const providerToUse = selectedProvider === 'auto' ? undefined : selectedProvider;
                 const response = await sendChatMessage({
                   messages: history,
-                  current_code: pythonCode,
+                  current_code: activeCode,
                   editor_mode: editorMode,
                   stream: false,
                   provider: providerToUse,
@@ -321,7 +327,7 @@ const AIChatPanel: React.FC = () => {
         setIsStreaming(false);
       }
     },
-    [input, isLoading, messages, pythonCode, editorMode, useLocalKey, apiKeyInput]
+    [input, isLoading, messages, activeCode, editorMode, useLocalKey, apiKeyInput]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

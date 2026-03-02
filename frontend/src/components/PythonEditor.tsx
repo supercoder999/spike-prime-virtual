@@ -56,7 +56,7 @@ const PYBRICKS_COMPLETIONS = [
 ];
 
 const PythonEditor: React.FC = () => {
-  const { pythonCode, setPythonCode, darkMode, programs, addProgram, setCurrentProgram, currentProgramId, updateProgram, editorMode } = useStore();
+  const { pythonCode, setPythonCode, darkMode, currentProgramId, updateProgram } = useStore();
   const editorRef = useRef<any>(null);
   const lastPasteTimeRef = useRef<number>(0);
 
