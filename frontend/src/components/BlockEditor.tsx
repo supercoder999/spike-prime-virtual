@@ -6,6 +6,8 @@ import {
   simToolboxCategories,
 } from '../blockly/simBlocks';
 import { useStore } from '../store/useStore';
+import { BLOCK_EXAMPLES, DEFAULT_BLOCK_EXAMPLE_ID } from '../services/editorExamples';
+import { FREE_LINE_LIMIT, countBlocks } from '../services/activationLimit';
 
 const ideSimTheme = Blockly.Theme.defineTheme('ideSimTheme', {
   name: 'ideSimTheme',
@@ -62,8 +64,9 @@ const ideSimTheme = Blockly.Theme.defineTheme('ideSimTheme', {
 const BlockEditor: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const applyingExternalXmlRef = useRef(false);
   const [initError, setInitError] = useState<string>('');
-  const { setBlocklyXml, darkMode } = useStore();
+  const { setBlocklyXml, darkMode, blocklyXml, isActivated, activationExpiry, setActivated, setShowActivationModal } = useStore();
   const scratchToolbox = useMemo(
     () => ({
       kind: 'categoryToolbox',
@@ -74,16 +77,23 @@ const BlockEditor: React.FC = () => {
 
   // Save Blockly XML state
   const updateCode = useCallback(() => {
-    if (workspaceRef.current) {
+    if (workspaceRef.current && !applyingExternalXmlRef.current) {
       try {
         const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
         const xmlText = Blockly.Xml.domToText(xml);
+        const isExpired = activationExpiry ? new Date(activationExpiry + 'T23:59:59') < new Date() : false;
+        if ((!isActivated || isExpired) && countBlocks(xmlText) > FREE_LINE_LIMIT) {
+          if (isExpired) setActivated(false);
+          setShowActivationModal(true);
+          workspaceRef.current.undo(false);
+          return;
+        }
         setBlocklyXml(xmlText);
       } catch (err) {
         console.error('Error generating code:', err);
       }
     }
-  }, [setBlocklyXml]);
+  }, [setBlocklyXml, isActivated, activationExpiry, setActivated, setShowActivationModal]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -155,6 +165,26 @@ const BlockEditor: React.FC = () => {
     };
   }, [darkMode, scratchToolbox]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace || !blocklyXml) return;
+
+    try {
+      const currentXml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
+      if (currentXml.trim() === blocklyXml.trim()) return;
+
+      applyingExternalXmlRef.current = true;
+      workspace.clear();
+      const xml = Blockly.utils.xml.textToDom(blocklyXml);
+      Blockly.Xml.domToWorkspace(xml, workspace);
+      Blockly.svgResize(workspace);
+    } catch (err) {
+      console.error('Failed to apply Blockly XML:', err);
+    } finally {
+      applyingExternalXmlRef.current = false;
+    }
+  }, [blocklyXml]);
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -183,47 +213,7 @@ const BlockEditor: React.FC = () => {
 };
 
 function addDefaultBlocks(workspace: Blockly.WorkspaceSvg) {
-  const xml = `
-    <xml xmlns="https://developers.google.com/blockly/xml">
-      <block type="sim_when_run" x="18" y="18">
-        <statement name="DO">
-          <block type="controls_repeat_ext">
-            <value name="TIMES">
-              <shadow type="math_number">
-                <field name="NUM">4</field>
-              </shadow>
-            </value>
-            <statement name="DO">
-              <block type="sim_drive_for_seconds">
-                <value name="THROTTLE">
-                  <shadow type="math_number"><field name="NUM">80</field></shadow>
-                </value>
-                <value name="STEERING">
-                  <shadow type="math_number"><field name="NUM">0</field></shadow>
-                </value>
-                <value name="SECONDS">
-                  <shadow type="math_number"><field name="NUM">0.7</field></shadow>
-                </value>
-                <next>
-                  <block type="sim_drive_for_seconds">
-                    <value name="THROTTLE">
-                      <shadow type="math_number"><field name="NUM">70</field></shadow>
-                    </value>
-                    <value name="STEERING">
-                      <shadow type="math_number"><field name="NUM">55</field></shadow>
-                    </value>
-                    <value name="SECONDS">
-                      <shadow type="math_number"><field name="NUM">0.5</field></shadow>
-                    </value>
-                  </block>
-                </next>
-              </block>
-            </statement>
-          </block>
-        </statement>
-      </block>
-    </xml>
-  `;
+  const xml = BLOCK_EXAMPLES.find((item) => item.id === DEFAULT_BLOCK_EXAMPLE_ID)?.xml ?? '';
 
   try {
     const dom = Blockly.utils.xml.textToDom(xml);

@@ -109,7 +109,8 @@
   background: #254da3;
   color: #f7fbff;
   font: inherit;
-  padding: 7px 11px;
+  font-size: 0.85em;
+  padding: 5px 8px;
   cursor: pointer;
 }
 

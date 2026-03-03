@@ -14,9 +14,14 @@ const StatusBar: React.FC = () => {
     cCode,
   } = useStore();
 
-  const activeCode = editorMode === 'c' ? cCode : editorMode === 'blocks' ? blocklyXml : pythonCode;
+  const activeCode = editorMode === 'c' ? cCode : editorMode === 'python' ? pythonCode : '';
   const lineCount = activeCode.split('\n').length;
   const charCount = activeCode.length;
+
+  // For blocks, count <block type="..."> occurrences
+  const blockCount = editorMode === 'blocks'
+    ? (blocklyXml.match(/<block\s+type="/g) || []).length
+    : 0;
 
   return (
     <div className="status-bar">
@@ -58,19 +63,35 @@ const StatusBar: React.FC = () => {
         )}
       </div>
 
+      <div className="status-bar-center">
+        <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="status-bar-link">
+          Terms of Service
+        </a>
+        <span className="status-bar-link-sep">|</span>
+        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="status-bar-link">
+          Privacy Policy
+        </a>
+        <span className="status-bar-link-sep">|</span>
+        <a href="/contact.html" target="_blank" rel="noopener noreferrer" className="status-bar-link">
+          Contact Us
+        </a>
+        <span className="status-bar-link-sep">|</span>
+        <a href="/faq.html" target="_blank" rel="noopener noreferrer" className="status-bar-link">
+          FAQ
+        </a>
+      </div>
+
       <div className="status-bar-right">
         <div className="status-item">
           <span>
-            {editorMode === 'python'
-              ? 'Python Editor'
-              : editorMode === 'c'
-              ? 'C Editor'
-              : 'Block Editor'}
+            {editorMode === 'python' ? 'Python Editor' : editorMode === 'blocks' ? 'Block Editor' : 'C Editor'}
           </span>
         </div>
         <div className="status-item">
           <span>
-            Ln {lineCount}, {charCount} chars
+            {editorMode === 'blocks'
+              ? `${blockCount} block${blockCount !== 1 ? 's' : ''}`
+              : `Ln ${lineCount}, ${charCount} chars`}
           </span>
         </div>
         <div className="status-item">

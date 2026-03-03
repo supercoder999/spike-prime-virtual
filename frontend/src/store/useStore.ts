@@ -71,31 +71,45 @@ interface AppState {
   simulationMode: boolean;
   setSimulationMode: (enabled: boolean) => void;
   toggleSimulationMode: () => void;
+
+  // Activation
+  isActivated: boolean;
+  setActivated: (activated: boolean) => void;
+  activationExpiry: string | null;  // ISO date e.g. "2026-09-30"
+  setActivationExpiry: (expiry: string | null) => void;
+  showActivationModal: boolean;
+  setShowActivationModal: (show: boolean) => void;
 }
 
 const DEFAULT_PYTHON_CODE = `from pybricks.hubs import PrimeHub
-from pybricks.pupdevices import Motor, ColorSensor, UltrasonicSensor, ForceSensor
-from pybricks.parameters import Button, Color, Direction, Port, Side, Stop
+from pybricks.pupdevices import Motor
+from pybricks.parameters import Color, Direction, Port, Stop
 from pybricks.robotics import DriveBase
-from pybricks.tools import wait, StopWatch
+from pybricks.tools import wait
 
-# Initialize the hub
+# Example (about 15 commands): hub + motors + drive base demo
 hub = PrimeHub()
+left_motor = Motor(Port.A)
+right_motor = Motor(Port.B, Direction.COUNTERCLOCKWISE)
+arm_motor = Motor(Port.C)
+drive_base = DriveBase(left_motor, right_motor, wheel_diameter=56, axle_track=114)
 
-# Display a smiley face
-hub.display.image([
-    [100, 0, 0, 0, 100],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [100, 0, 0, 0, 100],
-    [0, 100, 100, 100, 0],
-])
+hub.light.on(Color.GREEN)
+hub.speaker.beep(440, 120)
 
-# Wait 3 seconds
-wait(3000)
+drive_base.straight(250)
+wait(300)
+drive_base.turn(90)
+wait(300)
+arm_motor.run_angle(500, 180, Stop.HOLD)
+wait(200)
 
-# Beep!
-hub.speaker.beep()
+hub.light.on(Color.BLUE)
+drive_base.straight(-120)
+hub.speaker.beep(660, 120)
+drive_base.stop()
+
+print("Demo complete")
 `;
 
 const DEFAULT_C_CODE = `#include <pbio/drivebase.h>
@@ -174,6 +188,14 @@ export const useStore = create<AppState>()(
       simulationMode: false,
       setSimulationMode: (simulationMode) => set({ simulationMode }),
       toggleSimulationMode: () => set((state) => ({ simulationMode: !state.simulationMode })),
+
+      // Activation
+      isActivated: false,
+      setActivated: (isActivated) => set({ isActivated }),
+      activationExpiry: null,
+      setActivationExpiry: (activationExpiry) => set({ activationExpiry }),
+      showActivationModal: false,
+      setShowActivationModal: (showActivationModal) => set({ showActivationModal }),
     }),
     {
       name: 'pybricks-ide-storage',
@@ -190,6 +212,8 @@ export const useStore = create<AppState>()(
         showFileExplorer: state.showFileExplorer,
         showAIChat: state.showAIChat,
         simulationMode: state.simulationMode,
+        isActivated: state.isActivated,
+        activationExpiry: state.activationExpiry,
       }),
     },
   ),

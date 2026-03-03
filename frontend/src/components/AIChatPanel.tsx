@@ -169,6 +169,10 @@ const AIChatPanel: React.FC = () => {
     pythonCode,
     cCode,
     editorMode,
+    isActivated,
+    activationExpiry,
+    setActivated,
+    setShowActivationModal,
   } = useStore();
 
   const activeCode = editorMode === 'c' ? cCode : pythonCode;
@@ -457,6 +461,29 @@ const AIChatPanel: React.FC = () => {
 
       {/* Input area */}
       <div className="ai-chat-input-area">
+        {(() => {
+          const isExpired = activationExpiry ? new Date(activationExpiry + 'T23:59:59') < new Date() : false;
+          const needsActivation = !isActivated || isExpired;
+          if (needsActivation) {
+            return (
+              <div className="ai-subscribe-overlay">
+                <Sparkles size={20} />
+                <p><strong>AI Assistant</strong> is a premium feature.</p>
+                <p>Subscribe to unlock unlimited AI-powered help with your Spike Prime code.</p>
+                <button
+                  className="ai-subscribe-btn"
+                  onClick={() => {
+                    if (isExpired) setActivated(false);
+                    setShowActivationModal(true);
+                  }}
+                >
+                  Subscribe to Unlock
+                </button>
+              </div>
+            );
+          }
+          return null;
+        })()}
         {messages.length > 0 && (
           <div className="ai-chat-context-bar">
             <Code2 size={12} />
@@ -472,7 +499,7 @@ const AIChatPanel: React.FC = () => {
             onKeyDown={handleKeyDown}
             placeholder="Ask about Spike Prime coding..."
             rows={1}
-            disabled={isLoading}
+            disabled={isLoading || (!isActivated || (activationExpiry ? new Date(activationExpiry + 'T23:59:59') < new Date() : false))}
           />
           <button
             className="ai-send-btn"

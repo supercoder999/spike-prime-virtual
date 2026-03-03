@@ -2,6 +2,7 @@ import React, { useRef, useState, useCallback, lazy, Suspense } from 'react';
 import { useStore } from './store/useStore';
 import Toolbar from './components/Toolbar';
 import StatusBar from './components/StatusBar';
+import ActivationModal from './components/ActivationModal';
 import './App.css';
 
 const PythonEditor = lazy(() => import('./components/PythonEditor'));
@@ -67,6 +68,7 @@ const App: React.FC = () => {
   const explorer = useResize('horizontal', 220, 140, 400);
   const terminal = useResize('vertical', 200, 80, 600, true);
   const aiPanel = useResize('horizontal', 380, 260, 700, true);
+  const aiPanelWidth = showAIChat ? aiPanel.size : 0;
 
   return (
     <div className={`app ${darkMode ? 'dark' : 'light'}`}>
@@ -112,18 +114,17 @@ const App: React.FC = () => {
         </div>
 
         {/* AI Chat Panel */}
-        {showAIChat && (
-          <>
-            <div className="resize-handle resize-handle-h" onMouseDown={aiPanel.onMouseDown} />
-            <div className="ai-chat-wrapper" style={{ width: aiPanel.size }}>
-              <Suspense fallback={null}>
-                <AIChatPanel />
-              </Suspense>
-            </div>
-          </>
-        )}
+        {showAIChat && <div className="resize-handle resize-handle-h" onMouseDown={aiPanel.onMouseDown} />}
+        <div className={`ai-chat-wrapper ${showAIChat ? 'open' : 'closed'}`} style={{ width: aiPanelWidth }}>
+          {showAIChat ? (
+            <Suspense fallback={null}>
+              <AIChatPanel />
+            </Suspense>
+          ) : null}
+        </div>
       </div>
       <StatusBar />
+      <ActivationModal />
     </div>
   );
 };

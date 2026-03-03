@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Us – Code Pybricks</title>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <style>
+    :root { color-scheme: dark; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 3rem 2rem 4rem;
+    }
+
+    /* ── Back link ── */
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: #8b949e;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: #58a6ff; }
+    .back-link svg { vertical-align: -2px; margin-right: 4px; }
+
+    /* ── Header ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #21262d;
+    }
+    .page-header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #58a6ff;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+    .page-header p {
+      color: #8b949e;
+      font-size: 1rem;
+      margin-top: 0.75rem;
+    }
+
+    /* ── Form ── */
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-group label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+    .form-group label .required {
+      color: #f85149;
+      margin-left: 2px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 0.95rem;
+      padding: 0.65rem 0.85rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+    }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: #484f58;
+    }
+    .form-group select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8.5L1 3.5h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2rem;
+    }
+    .form-group select option {
+      background: #161b22;
+      color: #c9d1d9;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 140px;
+    }
+
+    /* ── reCAPTCHA badge tweak ── */
+    .grecaptcha-badge {
+      visibility: hidden;
+    }
+    .recaptcha-notice {
+      font-size: 0.8rem;
+      color: #484f58;
+      margin-top: 0.5rem;
+      line-height: 1.5;
+    }
+    .recaptcha-notice a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+    .recaptcha-notice a:hover { text-decoration: underline; }
+
+    /* ── Submit button ── */
+    .submit-btn {
+      background: #238636;
+      color: #ffffff;
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 6px;
+      padding: 0.7rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 0.5rem;
+    }
+    .submit-btn:hover { background: #2ea043; }
+    .submit-btn:disabled {
+      background: #21262d;
+      color: #484f58;
+      border-color: #30363d;
+      cursor: not-allowed;
+    }
+
+    /* ── Messages ── */
+    .msg {
+      padding: 0.8rem 1rem;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      display: none;
+    }
+    .msg.success {
+      display: block;
+      background: rgba(35, 134, 54, 0.15);
+      border: 1px solid #238636;
+      color: #56d364;
+    }
+    .msg.error {
+      display: block;
+      background: rgba(248, 81, 73, 0.1);
+      border: 1px solid #f85149;
+      color: #f85149;
+    }
+
+    /* ── Footer ── */
+    .page-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #21262d;
+      text-align: center;
+      color: #484f58;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 2rem 1.25rem 3rem; }
+      .page-header h1 { font-size: 1.7rem; }
+      .captcha-group { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <a href="/" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M7.78 12.53a.75.75 0 01-1.06 0L2.47 8.28a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 1.06L4.81 7h7.44a.75.75 0 010 1.5H4.81l2.97 2.97a.75.75 0 010 1.06z"/></svg>
+      Back to Code Pybricks
+    </a>
+
+    <header class="page-header">
+      <h1>Contact Us</h1>
+      <p>Have a question, bug report, or feature request? We'd love to hear from you.</p>
+    </header>
+
+    <div id="successMsg" class="msg"></div>
+
+    <form class="contact-form" id="contactForm">
+
+      <!-- Email -->
+      <div class="form-group">
+        <label>Your Email <span class="required">*</span></label>
+        <input type="email" id="userEmail" placeholder="you@example.com" required />
+      </div>
+
+      <!-- Topic -->
+      <div class="form-group">
+        <label>Topic <span class="required">*</span></label>
+        <select id="topic" required>
+          <option value="" disabled selected>Select a topic...</option>
+          <option value="Bug Report">Bug Report</option>
+          <option value="Feature Request">Feature Request</option>
+          <option value="Billing / Payment">Billing / Payment</option>
+          <option value="Account Issue">Account Issue</option>
+          <option value="General Question">General Question</option>
+        </select>
+      </div>
+
+      <!-- Message -->
+      <div class="form-group">
+        <label>Message <span class="required">*</span></label>
+        <textarea id="message" placeholder="Describe your issue or question in detail..." required></textarea>
+      </div>
+
+      <!-- Invisible reCAPTCHA -->
+      <button
+        class="g-recaptcha submit-btn"
+        data-sitekey="REPLACE_WITH_YOUR_RECAPTCHA_SITE_KEY"
+        data-callback="onRecaptchaSuccess"
+        data-action="submit"
+        id="submitBtn"
+      >Send Message</button>
+      <p class="recaptcha-notice">
+        Protected by reCAPTCHA.
+        <a href="https://policies.google.com/privacy" target="_blank">Privacy</a> &amp;
+        <a href="https://policies.google.com/terms" target="_blank">Terms</a> apply.
+      </p>
+    </form>
+
+    <footer class="page-footer">
+      &copy; 2026 Code Pybricks. All rights reserved.
+    </footer>
+
+  </div>
+
+  <script>
+    // ─── reCAPTCHA callback ───
+    function showMsg(text, type) {
+      const el = document.getElementById('successMsg');
+      el.textContent = text;
+      el.className = 'msg ' + type;
+    }
+
+    async function onRecaptchaSuccess(token) {
+      const email = document.getElementById('userEmail').value.trim();
+      const topic = document.getElementById('topic').value;
+      const msg   = document.getElementById('message').value.trim();
+      const btn   = document.getElementById('submitBtn');
+
+      if (!email || !topic || !msg) {
+        showMsg('Please fill in all required fields.', 'error');
+        grecaptcha.reset();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        const resp = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, topic, message: msg, recaptcha_token: token })
+        });
+
+        if (resp.ok) {
+          showMsg('Thank you! Your message has been sent. We\'ll get back to you soon.', 'success');
+          document.getElementById('contactForm').reset();
+        } else {
+          const data = await resp.json().catch(() => ({}));
+          showMsg(data.detail || 'Failed to send message. Please try again later.', 'error');
+        }
+      } catch (err) {
+        showMsg('Network error. Please check your connection and try again.', 'error');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+      grecaptcha.reset();
+    }
+
+    // Prevent default form submit — reCAPTCHA button handles it
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>

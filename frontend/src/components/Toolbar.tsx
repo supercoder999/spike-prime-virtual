@@ -1,19 +1,16 @@
 import React, { useEffect, useCallback, useRef } from 'react';
-import * as Blockly from 'blockly';
-import { javascriptGenerator } from 'blockly/javascript';
 import { useStore } from '../store/useStore';
 import { bleService, BleEvent } from '../services/bleService';
-import { registerSimBlocks, registerSimGenerators } from '../blockly/simBlocks';
 import {
   installLatestStablePrimehubFirmware,
   restoreBundledLegoFirmware,
 } from '../services/firmwareService';
+import { convertBlocklyXmlToSimJs } from '../services/blocklyToSimJs';
 import {
   Bluetooth,
   BluetoothOff,
   Play,
   Square,
-  Gamepad2,
   Terminal as TerminalIcon,
   Sun,
   Moon,
@@ -27,6 +24,8 @@ import {
   BatteryLow,
   Wifi,
   Sparkles,
+  Gamepad2,
+  Braces,
 } from 'lucide-react';
 
 const Toolbar: React.FC = () => {
@@ -55,13 +54,14 @@ const Toolbar: React.FC = () => {
     setPythonCode,
     blocklyXml,
     cCode,
+    setCCode,
     showAIChat,
     toggleAIChat,
     simulationMode,
     setSimulationMode,
   } = useStore();
-  const simChannelRef = useRef<BroadcastChannel | null>(null);
-  const simSeenAtRef = useRef(0);
+  const simBridgeRef = useRef<BroadcastChannel | null>(null);
+  const simLastSeenRef = useRef<number>(0);
 
   // BLE event handler
   const handleBleEvent = useCallback(
@@ -124,50 +124,123 @@ const Toolbar: React.FC = () => {
   }, [handleBleEvent]);
 
   useEffect(() => {
+    setSimulationMode(false);
     if (typeof BroadcastChannel === 'undefined') return;
 
     const channel = new BroadcastChannel('code-pybricks-sim-bridge');
-    simChannelRef.current = channel;
+    simBridgeRef.current = channel;
 
-    const markSimulatorAlive = () => {
-      simSeenAtRef.current = Date.now();
+    const markAlive = () => {
+      simLastSeenRef.current = Date.now();
       setSimulationMode(true);
     };
 
     channel.onmessage = (event) => {
       const message = event.data || {};
-
       if (message.type === 'SIM_READY' || message.type === 'SIM_HEARTBEAT' || message.type === 'SIM_PONG') {
-        markSimulatorAlive();
+        markAlive();
+        return;
       }
 
-      if (message.type === 'SIM_RUN_STATUS' && typeof message.text === 'string') {
+      if (message.type === 'SIM_RUN_STATUS' && message.text) {
         addTerminalLine({
-          text: message.text,
+          text: String(message.text),
           type: message.level === 'error' ? 'error' : 'info',
           timestamp: Date.now(),
         });
       }
     };
 
-    channel.postMessage({ type: 'SIM_PING' });
-
-    const interval = window.setInterval(() => {
-      channel.postMessage({ type: 'SIM_PING' });
-      if (Date.now() - simSeenAtRef.current > 3000) {
+    const pingTimer = window.setInterval(() => {
+      channel.postMessage({ type: 'SIM_PING', ts: Date.now() });
+      if (Date.now() - simLastSeenRef.current > 2500) {
         setSimulationMode(false);
       }
     }, 1000);
 
+    channel.postMessage({ type: 'SIM_PING', ts: Date.now() });
+
     return () => {
-      window.clearInterval(interval);
-      if (simChannelRef.current) {
-        simChannelRef.current.close();
-        simChannelRef.current = null;
-      }
+      window.clearInterval(pingTimer);
+      channel.close();
+      simBridgeRef.current = null;
       setSimulationMode(false);
     };
-  }, [addTerminalLine, setSimulationMode]);
+  }, [setSimulationMode, addTerminalLine]);
+
+  const runInSimulator = useCallback(() => {
+    const channel = simBridgeRef.current;
+    if (!channel || !simulationMode) {
+      addTerminalLine({
+        text: 'Simulator is not open. Click Sim to open it first.',
+        type: 'error',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (editorMode === 'python') {
+      channel.postMessage({
+        type: 'SIM_RUN_PYTHON',
+        code: pythonCode,
+        sourceLabel: 'IDE Python',
+      });
+      addTerminalLine({
+        text: 'Run Sim: sent Python code to simulator.',
+        type: 'info',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (editorMode === 'blocks') {
+      if (!blocklyXml?.trim()) {
+        addTerminalLine({
+          text: 'Run Sim: no Blocks XML found to run.',
+          type: 'error',
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
+      const conversion = convertBlocklyXmlToSimJs(blocklyXml);
+      if (conversion.error) {
+        addTerminalLine({
+          text: `Run Sim failed: ${conversion.error}`,
+          type: 'error',
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
+      if (!conversion.code.trim()) {
+        addTerminalLine({
+          text: 'Run Sim: no executable Blocks code generated.',
+          type: 'error',
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
+      channel.postMessage({
+        type: 'SIM_RUN_JS',
+        code: conversion.code,
+        sourceLabel: 'IDE Blocks',
+      });
+      addTerminalLine({
+        text: 'Run Sim: sent Blocks-generated JS to simulator.',
+        type: 'info',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    addTerminalLine({
+      text: 'Run Sim supports Python and Blocks tabs only.',
+      type: 'info',
+      timestamp: Date.now(),
+    });
+  }, [simulationMode, editorMode, pythonCode, blocklyXml, addTerminalLine]);
 
   const handleConnect = async () => {
     if (connectionState === 'connected') {
@@ -187,62 +260,9 @@ const Toolbar: React.FC = () => {
     }
   };
 
-  const handleRunSimulator = async () => {
-    const channel = simChannelRef.current;
-    if (!channel) {
-      addTerminalLine({
-        text: 'Simulator is not available. Open simulator tab first.',
-        type: 'error',
-        timestamp: Date.now(),
-      });
-      return;
-    }
-
-    if (editorMode === 'blocks') {
-      if (!blocklyXml.trim()) {
-        addTerminalLine({ text: 'No blocks to run in simulator.', type: 'info', timestamp: Date.now() });
-        return;
-      }
-
-      try {
-        registerSimBlocks();
-        registerSimGenerators();
-        const workspace = new Blockly.Workspace();
-        const xml = Blockly.utils.xml.textToDom(blocklyXml);
-        Blockly.Xml.domToWorkspace(xml, workspace);
-        const jsCode = javascriptGenerator.workspaceToCode(workspace);
-        workspace.dispose();
-
-        if (!jsCode.trim()) {
-          addTerminalLine({ text: 'No executable block code for simulator.', type: 'info', timestamp: Date.now() });
-          return;
-        }
-
-        channel.postMessage({ type: 'SIM_RUN_JS', code: jsCode, sourceLabel: 'IDE Blocks' });
-        addTerminalLine({ text: 'Sent Blocks program to simulator.', type: 'info', timestamp: Date.now() });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        addTerminalLine({ text: `Run Sim failed (Blocks): ${message}`, type: 'error', timestamp: Date.now() });
-      }
-      return;
-    }
-
-    if (editorMode === 'python') {
-      channel.postMessage({ type: 'SIM_RUN_PYTHON', code: pythonCode, sourceLabel: 'IDE Python' });
-      addTerminalLine({ text: 'Sent Python program to simulator.', type: 'info', timestamp: Date.now() });
-      return;
-    }
-
-    addTerminalLine({
-      text: 'Run Sim currently supports Python and Blocks tabs.',
-      type: 'info',
-      timestamp: Date.now(),
-    });
-  };
-
   const handleRun = async () => {
     if (simulationMode) {
-      await handleRunSimulator();
+      runInSimulator();
       return;
     }
 
@@ -278,8 +298,22 @@ const Toolbar: React.FC = () => {
 
   const handleStop = async () => {
     if (simulationMode) {
-      simChannelRef.current?.postMessage({ type: 'SIM_STOP' });
-      addTerminalLine({ text: 'Stop signal sent to simulator.', type: 'info', timestamp: Date.now() });
+      const channel = simBridgeRef.current;
+      if (!channel) {
+        addTerminalLine({
+          text: 'Simulator is not open. Nothing to stop.',
+          type: 'info',
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
+      channel.postMessage({ type: 'SIM_STOP' });
+      addTerminalLine({
+        text: 'Stop Sim: stop signal sent to simulator.',
+        type: 'info',
+        timestamp: Date.now(),
+      });
       return;
     }
 
@@ -348,15 +382,21 @@ const Toolbar: React.FC = () => {
   const handleImport = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.py';
+    input.accept = '.py,.c,.h';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
         const content = reader.result as string;
-        setPythonCode(content);
-        setEditorMode('python');
+        const isCFile = file.name.endsWith('.c') || file.name.endsWith('.h');
+        if (isCFile) {
+          setCCode(content);
+          setEditorMode('c');
+        } else {
+          setPythonCode(content);
+          setEditorMode('python');
+        }
 
         addTerminalLine({
           text: `Imported: ${file.name}`,
@@ -377,23 +417,34 @@ const Toolbar: React.FC = () => {
     setEditorMode('python');
   };
 
+  const handleSwitchToC = () => {
+    setEditorMode('c');
+  };
+
   const handleOpenSimulator = () => {
     const popupFeatures = [
       'popup=yes',
+      'toolbar=no',
+      'location=no',
+      'menubar=no',
+      'status=no',
+      'scrollbars=yes',
+      'resizable=yes',
       'width=1400',
       'height=900',
-      'left=80',
-      'top=40',
-      'toolbar=no',
-      'menubar=no',
-      'location=no',
-      'status=no',
-      'scrollbars=no',
-      'resizable=yes',
     ].join(',');
 
-    const simWindow = window.open('/simulator.html', 'code_pybricks_simulator', popupFeatures);
-    simWindow?.focus();
+    const simWindow = window.open('/simulator.html', 'code-pybricks-simulator', popupFeatures);
+    if (!simWindow) {
+      addTerminalLine({
+        text: 'Popup blocked. Please allow popups for this site to open simulator window.',
+        type: 'error',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    simWindow.focus();
   };
 
   const handleInstallPybricksFirmware = async () => {
@@ -516,18 +567,8 @@ const Toolbar: React.FC = () => {
         <button
           className="toolbar-btn run-btn"
           onClick={handleRun}
-          disabled={
-            simulationMode
-              ? false
-              : (editorMode === 'python' && connectionState !== 'connected') || hubStatus === 'running'
-          }
-          title={
-            simulationMode
-              ? 'Run program in simulator (F5)'
-              : editorMode === 'python'
-              ? 'Run program (F5)'
-              : 'Run currently supports Python tab'
-          }
+          disabled={simulationMode ? false : ((editorMode === 'python' && connectionState !== 'connected') || hubStatus === 'running')}
+          title={simulationMode ? 'Run in simulator (F5)' : (editorMode === 'python' ? 'Run program (F5)' : 'Run currently supports Python tab')}
         >
           <Play size={18} />
           <span className="toolbar-label">{simulationMode ? 'Run Sim' : 'Run'}</span>
@@ -536,8 +577,8 @@ const Toolbar: React.FC = () => {
         <button
           className="toolbar-btn stop-btn"
           onClick={handleStop}
-          disabled={connectionState !== 'connected'}
-          title="Stop program (F6)"
+          disabled={simulationMode ? false : connectionState !== 'connected'}
+          title={simulationMode ? 'Stop simulator run (F6)' : 'Stop program (F6)'}
         >
           <Square size={18} />
           <span className="toolbar-label">Stop</span>
@@ -562,6 +603,14 @@ const Toolbar: React.FC = () => {
           >
             <Puzzle size={16} />
             <span>Blocks</span>
+          </button>
+          <button
+            className={`mode-btn ${editorMode === 'c' ? 'active' : ''}`}
+            onClick={handleSwitchToC}
+            title="C doesn't support Simulation Mode. You need to flash the install firmware and flash in the C code from the below Editor. Please ensure to put your Spike Prime Hub in DFU mode."
+          >
+            <Braces size={16} />
+            <span>C</span>
           </button>
         </div>
       </div>
@@ -605,14 +654,9 @@ const Toolbar: React.FC = () => {
           <Sparkles size={18} />
           <span className="toolbar-label">AI</span>
         </button>
-
-        <button
-          className={`toolbar-btn ${simulationMode ? 'active' : ''}`}
-          onClick={handleOpenSimulator}
-          title="Open simulator in a new tab"
-        >
+        <button className="toolbar-btn" onClick={handleOpenSimulator} title="Open simulator">
           <Gamepad2 size={18} />
-          <span className="toolbar-label">Simulator</span>
+          <span className="toolbar-label">Sim</span>
         </button>
 
         <button

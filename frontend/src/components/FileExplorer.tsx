@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore, Program } from '../store/useStore';
 import { File, FilePlus, Trash2, FolderOpen, Pencil } from 'lucide-react';
+import {
+  BLOCK_EXAMPLES,
+  DEFAULT_BLOCK_EXAMPLE_ID,
+  DEFAULT_PYTHON_EXAMPLE_ID,
+  PYTHON_EXAMPLES,
+} from '../services/editorExamples';
 
 const FileExplorer: React.FC = () => {
   const {
@@ -19,10 +25,13 @@ const FileExplorer: React.FC = () => {
     blocklyXml,
     cCode,
     renameProgram,
+    addTerminalLine,
   } = useStore();
 
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [selectedPythonExampleId, setSelectedPythonExampleId] = useState(DEFAULT_PYTHON_EXAMPLE_ID);
+  const [selectedBlockExampleId, setSelectedBlockExampleId] = useState(DEFAULT_BLOCK_EXAMPLE_ID);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -39,7 +48,7 @@ const FileExplorer: React.FC = () => {
     setPythonCode(program.pythonCode);
     setBlocklyXml(program.blocklyXml);
     setCCode(program.cCode || '');
-    setEditorMode(program.mode);
+    setEditorMode(program.mode === 'c' ? 'python' : program.mode);
   };
 
   const handleDeleteProgram = (e: React.MouseEvent, id: string) => {
@@ -90,6 +99,43 @@ const FileExplorer: React.FC = () => {
     setCurrentProgram(program.id);
   };
 
+  const handleLoadExample = () => {
+    if (editorMode === 'python') {
+      const example = PYTHON_EXAMPLES.find((item) => item.id === selectedPythonExampleId);
+      if (!example) return;
+      setPythonCode(example.code);
+      if (currentProgramId) {
+        useStore.getState().updateProgram(currentProgramId, {
+          pythonCode: example.code,
+          mode: 'python',
+        });
+      }
+      addTerminalLine({
+        text: `Loaded Python example: ${example.name}`,
+        type: 'info',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (editorMode === 'blocks') {
+      const example = BLOCK_EXAMPLES.find((item) => item.id === selectedBlockExampleId);
+      if (!example) return;
+      setBlocklyXml(example.xml);
+      if (currentProgramId) {
+        useStore.getState().updateProgram(currentProgramId, {
+          blocklyXml: example.xml,
+          mode: 'blocks',
+        });
+      }
+      addTerminalLine({
+        text: `Loaded Blocks example: ${example.name}`,
+        type: 'info',
+        timestamp: Date.now(),
+      });
+    }
+  };
+
   return (
     <div className="file-explorer">
       <div className="file-explorer-header">
@@ -103,6 +149,35 @@ const FileExplorer: React.FC = () => {
           <FilePlus size={14} />
         </button>
       </div>
+      {(editorMode === 'python' || editorMode === 'blocks') && (
+        <div className="file-explorer-examples">
+          <select
+            className="file-explorer-example-select"
+            value={editorMode === 'python' ? selectedPythonExampleId : selectedBlockExampleId}
+            onChange={(e) => {
+              if (editorMode === 'python') {
+                setSelectedPythonExampleId(e.target.value);
+              } else {
+                setSelectedBlockExampleId(e.target.value);
+              }
+            }}
+            title={editorMode === 'python' ? 'Python examples' : 'Blocks examples'}
+          >
+            {(editorMode === 'python' ? PYTHON_EXAMPLES : BLOCK_EXAMPLES).map((example) => (
+              <option key={example.id} value={example.id}>
+                {example.name}
+              </option>
+            ))}
+          </select>
+          <button
+            className="file-explorer-example-load"
+            onClick={handleLoadExample}
+            title="Load selected example"
+          >
+            Load Example
+          </button>
+        </div>
+      )}
       <div className="file-explorer-list">
         {programs.length === 0 ? (
           <div className="file-explorer-empty">

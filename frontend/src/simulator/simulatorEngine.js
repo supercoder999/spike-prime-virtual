@@ -77,8 +77,8 @@ app.innerHTML = `
       </select>
     </div>
     <div class="status-row" id="clawBtnsRow">
-      <button id="openClawBtn" type="button">Open Claw</button>
-      <button id="closeClawBtn" type="button">Close Claw</button>
+      <button id="openClawBtn" type="button" title="Open Claw (O)">Open Claw</button>
+      <button id="closeClawBtn" type="button" title="Close Claw (P)">Close Claw</button>
     </div>
     <div class="status-row">
       <label class="select-label" for="slipperySlider">Wheel Grip:</label>
@@ -1020,6 +1020,8 @@ const colorSensorLocalZ = 3.5   // how far forward from center
 let leftSensorMesh = null
 let rightSensorMesh = null
 let hasColorSensors = false
+let hubButtonMesh = null
+let hubButtonDefaultColor = 0xf7f8fa
 
 function clearRobotParts() {
   for (const p of robotParts) car.remove(p)
@@ -1030,6 +1032,7 @@ function clearRobotParts() {
   leftSensorMesh = null
   rightSensorMesh = null
   hasColorSensors = false
+  hubButtonMesh = null
   claw.grabbedCan = null
   claw.openRatio = 1
   claw.targetOpenRatio = 1
@@ -1087,6 +1090,7 @@ function addCommonWheelsAndChassis() {
   hubButton.position.set(0, 2.47, -0.16)
   hubButton.castShadow = true
   car.add(hubButton); robotParts.push(hubButton)
+  hubButtonMesh = hubButton
   tagPart(hubButton, 'Hub Center Button', 'Power button and program selector. Press to turn on/off the hub, or cycle through stored programs.')
 
   const sideBeamMaterial = new THREE.MeshStandardMaterial({ color: 0x2f343c, roughness: 0.65 })
@@ -1448,12 +1452,12 @@ function buildRobot(type) {
     addClawToRobot()
     clawBtnsRow.style.display = ''
     vehicle.maxForwardSpeed = 22
-    vehicle.steerRate = 1.75
+    vehicle.steerRate = 3.5
   } else if (type === 'lineFollow') {
     clawBtnsRow.style.display = 'none'
     addColorSensorsToRobot()
     vehicle.maxForwardSpeed = 6
-    vehicle.steerRate = 3.0
+    vehicle.steerRate = 6.0
   }
 
   car.scale.set(0.45, 0.45, 0.45)
@@ -1517,6 +1521,7 @@ const input = {
 }
 
 let wheelSlippery = 0  // 0 = full grip, 100 = ice-like
+const SCRIPT_TURN_STEER_BOOST = 3.6
 
 const vehicle = {
   speed: 0,
@@ -1526,7 +1531,7 @@ const vehicle = {
   acceleration: 16,
   braking: 28,
   drag: 8.5,
-  steerRate: 1.75
+  steerRate: 3.5
 }
 
 // Build initial robot and map
@@ -3313,7 +3318,15 @@ async function runBlocklyProgram() {
   }
 
   stopBlocklyProgram(false)
-  const code = javascriptGenerator.workspaceToCode(blocklyWorkspace)
+
+  // Only generate code from spike_when_run blocks (ignore disconnected blocks)
+  const topBlocks = blocklyWorkspace.getTopBlocks(true)
+  const whenRunBlocks = topBlocks.filter(b => b.type === 'spike_when_run')
+  if (whenRunBlocks.length === 0) {
+    updateBlocksStatus('No "When Run" block found')
+    return
+  }
+  const code = whenRunBlocks.map(b => javascriptGenerator.blockToCode(b)).join('\n')
   if (!code.trim()) {
     updateBlocksStatus('No blocks to run')
     return
@@ -3442,18 +3455,18 @@ async function runSimulatorScript(code, sourceLabel = 'Scratch Blocks') {
       if (token !== blockRunToken) throw new Error('__BLOCK_RUN_STOPPED__')
       const deg = clamp(Math.abs(Number(degrees) || 90), 0, 3600)
       const startHeading = getRobotState().headingDeg
-      const targetHeading = normalizeHeadingDeg(startHeading - deg)
+      const targetHeading = normalizeHeadingDeg(startHeading + deg)
       input.scriptTurning = true
       // Set throttle and steering based on turn type
       if (turnType === 'POINT') {
         input.scriptThrottle = 0
-        input.scriptSteering = -1   // negative steering = left turn (decreasing heading)
+        input.scriptSteering = SCRIPT_TURN_STEER_BOOST   // positive steering = visual left (heading increases in Three.js)
       } else {
         // Pivot or Curve: use user-configurable wheel speeds
         const lSpd = clamp(Number(leftSpeed) || 0, -100, 100) / 100
         const rSpd = clamp(Number(rightSpeed) || 0, -100, 100) / 100
         input.scriptThrottle = (lSpd + rSpd) / 2
-        input.scriptSteering = (lSpd - rSpd) / 2
+        input.scriptSteering = clamp(((rSpd - lSpd) / 2) * SCRIPT_TURN_STEER_BOOST, -2, 2)
       }
       let accumulated = 0
       let prevHeading = startHeading
@@ -3463,7 +3476,7 @@ async function runSimulatorScript(code, sourceLabel = 'Scratch Blocks') {
         if (token !== blockRunToken) throw new Error('__BLOCK_RUN_STOPPED__')
         await new Promise(r => setTimeout(r, 16))
         const curHeading = getRobotState().headingDeg
-        let delta = prevHeading - curHeading   // left turn: heading decreases
+        let delta = curHeading - prevHeading   // left turn: heading increases in Three.js
         if (delta < -180) delta += 360
         if (delta > 180) delta -= 360
         const appliedDelta = Math.max(0, delta)
@@ -3496,18 +3509,18 @@ async function runSimulatorScript(code, sourceLabel = 'Scratch Blocks') {
       if (token !== blockRunToken) throw new Error('__BLOCK_RUN_STOPPED__')
       const deg = clamp(Math.abs(Number(degrees) || 90), 0, 3600)
       const startHeading = getRobotState().headingDeg
-      const targetHeading = normalizeHeadingDeg(startHeading + deg)
+      const targetHeading = normalizeHeadingDeg(startHeading - deg)
       input.scriptTurning = true
       // Set throttle and steering based on turn type
       if (turnType === 'POINT') {
         input.scriptThrottle = 0
-        input.scriptSteering = 1    // positive steering = right turn (increasing heading)
+        input.scriptSteering = -SCRIPT_TURN_STEER_BOOST    // negative steering = visual right (heading decreases in Three.js)
       } else {
         // Pivot or Curve: use user-configurable wheel speeds
         const lSpd = clamp(Number(leftSpeed) || 0, -100, 100) / 100
         const rSpd = clamp(Number(rightSpeed) || 0, -100, 100) / 100
         input.scriptThrottle = (lSpd + rSpd) / 2
-        input.scriptSteering = (lSpd - rSpd) / 2
+        input.scriptSteering = clamp(((lSpd - rSpd) / 2) * SCRIPT_TURN_STEER_BOOST, -2, 2)
       }
       let accumulated = 0
       let prevHeading = startHeading
@@ -3517,7 +3530,7 @@ async function runSimulatorScript(code, sourceLabel = 'Scratch Blocks') {
         if (token !== blockRunToken) throw new Error('__BLOCK_RUN_STOPPED__')
         await new Promise(r => setTimeout(r, 16))
         const curHeading = getRobotState().headingDeg
-        let delta = curHeading - prevHeading   // right turn: heading increases
+        let delta = prevHeading - curHeading   // right turn: heading decreases in Three.js
         if (delta < -180) delta += 360
         if (delta > 180) delta -= 360
         const appliedDelta = Math.max(0, delta)
@@ -3641,7 +3654,7 @@ async function runSimulatorScript(code, sourceLabel = 'Scratch Blocks') {
 
       input.scriptTurning = true
       input.scriptThrottle = 0
-      input.scriptSteering = direction > 0 ? 1 : -1
+      input.scriptSteering = direction > 0 ? -1 : 1   // positive degrees = visual right = negative steering in Three.js
 
       while (true) {
         if (token !== blockRunToken) throw new Error('__BLOCK_RUN_STOPPED__')
@@ -3675,6 +3688,23 @@ async function runSimulatorScript(code, sourceLabel = 'Scratch Blocks') {
     async setMovementSpeed(percent) {
       if (token !== blockRunToken) throw new Error('__BLOCK_RUN_STOPPED__')
       movementSpeedPercent = clamp(Number(percent) || 60, 0, 100)
+    },
+
+    // ── Hub Light API ───────────────────────────────────────────
+    async setHubLight(colorName) {
+      if (token !== blockRunToken) throw new Error('__BLOCK_RUN_STOPPED__')
+      if (!hubButtonMesh) return
+      const colorMap = {
+        RED: 0xff0000, GREEN: 0x00ff00, BLUE: 0x0044ff,
+        YELLOW: 0xffdd00, ORANGE: 0xff8800, VIOLET: 0x8800ff,
+        MAGENTA: 0xff00ff, CYAN: 0x00ffff, WHITE: 0xffffff,
+        NONE: hubButtonDefaultColor, OFF: hubButtonDefaultColor,
+      }
+      const hex = colorMap[colorName] != null ? colorMap[colorName] : hubButtonDefaultColor
+      const isOff = (colorName === 'NONE' || colorName === 'OFF')
+      hubButtonMesh.material.color.setHex(hex)
+      hubButtonMesh.material.emissive.setHex(isOff ? 0x000000 : hex)
+      hubButtonMesh.material.emissiveIntensity = isOff ? 0 : 0.85
     },
 
     async runMotorFor(motor, value, unit) {
@@ -4085,9 +4115,12 @@ function transpilePythonToSimulatorJs(pythonCode) {
     if (m) {
       driveBaseVars.add(m[1])
       if (!driveBaseUseGyro.has(m[1])) driveBaseUseGyro.set(m[1], false)
-      const axleTrack = toNum(m[5], 88, lineNo)
+      const wheelDiameterArg = String(m[4]).replace(/^\s*wheel_diameter\s*=\s*/, '').trim()
+      const axleTrackArg = String(m[5]).replace(/^\s*axle_track\s*=\s*/, '').trim()
+      const axleTrack = toNum(axleTrackArg, 88, lineNo)
       driveBaseAxleTrackMm.set(m[1], axleTrack)
       output.push(`await api.setDriveBaseAxleTrackMm(${axleTrack});`)
+      void wheelDiameterArg
       const leftPort = motorPorts.get(m[2])
       const rightPort = motorPorts.get(m[3])
       if (leftPort && rightPort) {
@@ -4096,14 +4129,10 @@ function transpilePythonToSimulatorJs(pythonCode) {
 
       const leftDirection = motorDirections.get(m[2])
       const rightDirection = motorDirections.get(m[3])
-      if (leftDirection === -1 && rightDirection === 1) {
-        driveBaseForwardSign = 1
-      } else if (leftDirection === 1 && rightDirection === -1) {
-        driveBaseForwardSign = -1
-      } else if (leftDirection != null && rightDirection != null) {
-        warnings.push(`Line ${lineNo}: Unusual DriveBase motor directions (left=${leftDirection}, right=${rightDirection}); using default forward sign.`)
-        driveBaseForwardSign = 1
-      }
+      // In Pybricks, DriveBase handles motor direction internally.
+      // straight(positive) always means forward regardless of motor Direction settings.
+      // So driveBaseForwardSign is always 1.
+      driveBaseForwardSign = 1
       continue
     }
 
@@ -4114,6 +4143,18 @@ function transpilePythonToSimulatorJs(pythonCode) {
         continue
       }
       driveBaseUseGyro.set(m[1], /^true$/i.test(m[2]))
+      continue
+    }
+
+    m = line.match(/^(\w+)\.settings\(\s*straight_speed\s*=\s*([^\)]+)\)$/)
+    if (m) {
+      if (!driveBaseVars.has(m[1])) {
+        warnings.push(`Line ${lineNo}: Unknown DriveBase variable: ${m[1]}`)
+        continue
+      }
+      const straightSpeedMmPerSec = toNum(m[2], 200, lineNo)
+      const speedPercent = Math.max(5, Math.min(100, Math.round(straightSpeedMmPerSec / 3.5)))
+      output.push(`await api.setMovementSpeed(${speedPercent});`)
       continue
     }
 
@@ -4134,6 +4175,16 @@ function transpilePythonToSimulatorJs(pythonCode) {
       const freq = toNum(args[0], 440, lineNo)
       const ms = args.length > 1 ? toNum(args[1], 250, lineNo) : 250
       output.push(`await api.playBeep(${freq}, ${ms} / 1000);`)
+      continue
+    }
+
+    m = line.match(/^(\w+)\.light\.on\(\s*Color\.(\w+)\s*\)$/)
+    if (m) {
+      if (!hubVars.has(m[1])) {
+        warnings.push(`Line ${lineNo}: Unknown hub variable: ${m[1]}`)
+      }
+      const colorName = m[2].toUpperCase()
+      output.push(`await api.setHubLight('${colorName}');`)
       continue
     }
 
@@ -4454,6 +4505,7 @@ robotSelect.addEventListener('change', () => {
   car.position.set(0, 0, 0)
   vehicle.heading = 0
   vehicle.speed = 0
+  robotSelect.blur()
 })
 
 mapSelect.addEventListener('change', () => {
@@ -4465,11 +4517,16 @@ mapSelect.addEventListener('change', () => {
   } else if (mapSelect.value === 'mapLineIntermediate') {
     car.position.set(0, 0, 40)
     vehicle.heading = Math.PI / 2
+  } else if (mapSelect.value === 'mapMaze') {
+    const sp = createMapMaze.startPos || { x: 0, z: 0 }
+    car.position.set(sp.x, 0, sp.z)
+    vehicle.heading = 0
   } else {
     car.position.set(0, 0, 0)
     vehicle.heading = 0
   }
   vehicle.speed = 0
+  mapSelect.blur()
 })
 
 openClawBtn.addEventListener('click', () => {
@@ -4618,6 +4675,24 @@ const spikeController = new SpikePrimeSerialController(
 
 
 _keydownHandler = (event) => {
+  const isDriveKey =
+    event.code === 'ArrowUp' ||
+    event.code === 'ArrowDown' ||
+    event.code === 'ArrowLeft' ||
+    event.code === 'ArrowRight' ||
+    event.code === 'KeyW' ||
+    event.code === 'KeyA' ||
+    event.code === 'KeyS' ||
+    event.code === 'KeyD'
+
+  if (isDriveKey) {
+    const activeEl = document.activeElement
+    if (activeEl && activeEl.tagName === 'SELECT') {
+      activeEl.blur()
+    }
+    event.preventDefault()
+  }
+
   switch (event.code) {
     case 'KeyW':
     case 'ArrowUp':
@@ -4717,6 +4792,7 @@ function updateVehicle(dt) {
   }
 
   const steerScale = 0.35 + (Math.abs(vehicle.speed) / vehicle.maxForwardSpeed) * 0.9
+  const steeringSpeedDegPerSec = steering * vehicle.steerRate * steerGripFactor * steerScale * (180 / Math.PI)
   vehicle.heading += steering * vehicle.steerRate * steerGripFactor * steerScale * dt
 
   const nextX = car.position.x + Math.sin(vehicle.heading) * vehicle.speed * dt
@@ -4857,7 +4933,7 @@ function updateVehicle(dt) {
   const rzCm = (car.position.z * CM_PER_WORLD_UNIT).toFixed(1)
   coordsText.textContent = `Robot: X=${rxCm}  Y=${ryCm}  Z=${rzCm} cm`
 
-  telemetry.textContent = `Speed: ${vehicle.speed.toFixed(1)} m/s | Steering: ${(steering * 100).toFixed(0)}%`
+  telemetry.textContent = `Speed: ${vehicle.speed.toFixed(1)} m/s | Steering Speed: ${steeringSpeedDegPerSec.toFixed(1)}°/s | Steering: ${(steering * 100).toFixed(0)}%`
 
   // Update color sensor readout
   if (hasColorSensors && sensorText) {

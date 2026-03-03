@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAQ – Code Pybricks</title>
+  <style>
+    :root { color-scheme: dark; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 2rem 4rem;
+    }
+
+    /* ── Back link ── */
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: #8b949e;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: #58a6ff; }
+    .back-link svg { vertical-align: -2px; margin-right: 4px; }
+
+    /* ── Header ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #21262d;
+    }
+    .page-header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #58a6ff;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+    .page-header p {
+      color: #8b949e;
+      font-size: 1rem;
+      margin-top: 0.75rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ── Table of Contents ── */
+    .toc {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .toc ol {
+      padding-left: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.2rem 2rem;
+    }
+    .toc ol li {
+      font-size: 0.92rem;
+    }
+    .toc a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── FAQ Section ── */
+    .faq-section {
+      margin-top: 2.5rem;
+    }
+    .faq-section h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #79c0ff;
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #21262d;
+    }
+    .faq-section p {
+      margin-bottom: 0.9rem;
+      color: #c9d1d9;
+    }
+    .faq-section ol, .faq-section ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .faq-section li {
+      margin-bottom: 0.4rem;
+    }
+
+    /* ── Screenshot / diagram placeholder ── */
+    .screenshot {
+      display: block;
+      max-width: 100%;
+      margin: 1.25rem auto;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ── Diagram wrapper (SVG illustrations) ── */
+    .diagram {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+      overflow-x: auto;
+    }
+    .diagram svg {
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* ── Step boxes ── */
+    .step-box {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-left: 3px solid #58a6ff;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .step-box .step-num {
+      display: inline-block;
+      background: #58a6ff;
+      color: #0d1117;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 50%;
+      margin-right: 0.6rem;
+    }
+    .step-box strong { color: #e6edf3; }
+    .step-box p { margin-top: 0.5rem; margin-bottom: 0; }
+
+    /* ── Keyboard shortcut badge ── */
+    kbd {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 0.85em;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      color: #e6edf3;
+    }
+
+    /* ── Tip callout ── */
+    .tip {
+      background: rgba(35, 134, 54, 0.1);
+      border: 1px solid #238636;
+      border-left: 3px solid #3fb950;
+      border-radius: 6px;
+      padding: 0.9rem 1.1rem;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+      color: #b1bac4;
+    }
+    .tip strong { color: #3fb950; }
+
+    /* ── Warning callout ── */
+    .warning {
+      background: rgba(210, 153, 34, 0.08);
+      border: 1px solid #d29922;
+      border-left: 3px solid #d29922;
+      border-radius: 6px;
+      padding: 0.9rem 1.1rem;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+      color: #b1bac4;
+    }
+    .warning strong { color: #d29922; }
+
+    /* ── Code block ── */
+    pre {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 1rem;
+      font-size: 0.88rem;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      color: #c9d1d9;
+      overflow-x: auto;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    pre .kw  { color: #ff7b72; }
+    pre .fn  { color: #d2a8ff; }
+    pre .str { color: #a5d6ff; }
+    pre .num { color: #79c0ff; }
+    pre .cmt { color: #8b949e; }
+
+    a { color: #58a6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Footer ── */
+    .page-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #21262d;
+      text-align: center;
+      color: #484f58;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 2rem 1.25rem 3rem; }
+      .page-header h1 { font-size: 1.7rem; }
+      .faq-section h2 { font-size: 1.15rem; }
+      .toc ol { flex-direction: column; gap: 0.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <a href="/" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M7.78 12.53a.75.75 0 01-1.06 0L2.47 8.28a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 1.06L4.81 7h7.44a.75.75 0 010 1.06z"/></svg>
+      Back to Code Pybricks
+    </a>
+
+    <header class="page-header">
+      <h1>Frequently Asked Questions</h1>
+      <p>Learn how to use Code Pybricks to program your LEGO Spike Prime hub using Python, Blocks, or C.</p>
+    </header>
+
+    <!-- Table of Contents -->
+    <nav class="toc">
+      <h3>Quick Navigation</h3>
+      <ol>
+        <li><a href="#overview">IDE Overview</a></li>
+        <li><a href="#connect-hub">Connecting Your Hub</a></li>
+        <li><a href="#python-editor">Using the Python Editor</a></li>
+        <li><a href="#blocks-editor">Using the Blocks Editor</a></li>
+        <li><a href="#c-editor">Using the C Editor</a></li>
+        <li><a href="#simulator">Using the Simulator</a>
+          <ul style="list-style:none; padding-left:1rem; margin:0.2rem 0 0;">
+            <li style="font-size:0.85rem;"><a href="#simulator">6a. Switching Maps</a></li>
+            <li style="font-size:0.85rem;"><a href="#simulator">6b. Keyboard Navigation</a></li>
+            <li style="font-size:0.85rem;"><a href="#simulator">6c. Claw &amp; Grabbing Cans</a></li>
+          </ul>
+        </li>
+        <li><a href="#file-management">Saving &amp; Loading Files</a></li>
+        <li><a href="#ai-assistant">AI Assistant</a></li>
+        <li><a href="#activation">Activation &amp; Limits</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+      </ol>
+    </nav>
+
+    <!-- ──────────────────────────────────── 1. Overview ── -->
+    <section class="faq-section" id="overview">
+      <h2>1. IDE Overview</h2>
+      <p>Code Pybricks is an all-in-one web IDE for programming LEGO Spike Prime robots. It features three editing modes, a 3D simulator, an AI assistant, and Bluetooth connectivity to your physical hub.</p>
+
+      <div class="diagram">
+        <svg width="760" height="260" viewBox="0 0 760 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Toolbar -->
+          <rect x="10" y="10" width="740" height="36" rx="4" fill="#333333"/>
+          <text x="20" y="33" font-size="12" fill="#58a6ff" font-family="sans-serif" font-weight="600">🔵 Connect</text>
+          <text x="110" y="33" font-size="12" fill="#4caf50" font-family="sans-serif">▶ Run</text>
+          <text x="165" y="33" font-size="12" fill="#f44336" font-family="sans-serif">■ Stop</text>
+          <text x="270" y="33" font-size="11" fill="#c9d1d9" font-family="sans-serif">Python</text>
+          <text x="330" y="33" font-size="11" fill="#c9d1d9" font-family="sans-serif">Blocks</text>
+          <text x="385" y="33" font-size="11" fill="#c9d1d9" font-family="sans-serif">C</text>
+          <text x="580" y="33" font-size="11" fill="#c9d1d9" font-family="sans-serif">🎮 Simulator</text>
+          <text x="680" y="33" font-size="11" fill="#c9d1d9" font-family="sans-serif">✨ AI Chat</text>
+          <!-- Editor area -->
+          <rect x="10" y="52" width="450" height="170" rx="4" fill="#1e1e1e" stroke="#3e3e42" stroke-width="1"/>
+          <text x="30" y="80" font-size="12" fill="#8b949e" font-family="monospace">1</text>
+          <text x="50" y="80" font-size="12" fill="#ff7b72" font-family="monospace">from</text>
+          <text x="85" y="80" font-size="12" fill="#c9d1d9" font-family="monospace">pybricks.hubs</text>
+          <text x="195" y="80" font-size="12" fill="#ff7b72" font-family="monospace">import</text>
+          <text x="245" y="80" font-size="12" fill="#d2a8ff" font-family="monospace">PrimeHub</text>
+          <text x="30" y="100" font-size="12" fill="#8b949e" font-family="monospace">2</text>
+          <text x="50" y="100" font-size="12" fill="#c9d1d9" font-family="monospace">hub = PrimeHub()</text>
+          <text x="30" y="120" font-size="12" fill="#8b949e" font-family="monospace">3</text>
+          <text x="50" y="120" font-size="12" fill="#c9d1d9" font-family="monospace">hub.light.on(Color.BLUE)</text>
+          <text x="200" y="150" font-size="14" fill="#58a6ff" font-family="sans-serif" font-weight="600">Code Editor</text>
+          <!-- AI panel -->
+          <rect x="470" y="52" width="280" height="170" rx="4" fill="#252526" stroke="#3e3e42" stroke-width="1"/>
+          <text x="570" y="130" font-size="14" fill="#58a6ff" font-family="sans-serif" font-weight="600">AI / Terminal</text>
+          <!-- Status bar -->
+          <rect x="10" y="228" width="740" height="24" rx="4" fill="#007acc"/>
+          <text x="20" y="244" font-size="10" fill="white" font-family="sans-serif">Disconnected</text>
+          <text x="280" y="244" font-size="10" fill="rgba(255,255,255,0.7)" font-family="sans-serif">Terms of Service | Privacy Policy | Contact Us | FAQ</text>
+          <text x="650" y="244" font-size="10" fill="white" font-family="sans-serif">Spike Prime</text>
+        </svg>
+      </div>
+      <p style="text-align: center; color: #8b949e; font-size: 0.85rem; margin-top: -0.5rem;">The main IDE layout: toolbar, code editor, side panel, and status bar.</p>
+    </section>
+
+    <!-- ──────────────────────────────────── 2. Connect Hub ── -->
+    <section class="faq-section" id="connect-hub">
+      <h2>2. Connecting Your Hub</h2>
+      <p>Code Pybricks uses <strong>Web Bluetooth</strong> to connect directly to your LEGO Spike Prime hub from the browser. No drivers or software installs needed.</p>
+
+      <div class="step-box">
+        <span class="step-num">1</span>
+        <strong>Turn on your Spike Prime hub</strong>
+        <p>Press the center button on your hub. Wait for the light to appear.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">2</span>
+        <strong>Click the Connect button (Bluetooth icon)</strong>
+        <p>In the toolbar at the top, click the <strong>blue Bluetooth button</strong>. Your browser will show a pairing dialog.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">3</span>
+        <strong>Select your hub from the list</strong>
+        <p>Choose your hub (usually named "Pybricks Hub") and click <strong>Pair</strong>. The status bar will show "Connected".</p>
+      </div>
+
+      <div class="diagram">
+        <svg width="500" height="120" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Hub icon -->
+          <rect x="30" y="20" width="80" height="80" rx="12" fill="#f0f0f0" stroke="#ccc" stroke-width="2"/>
+          <circle cx="70" cy="55" r="14" fill="#58a6ff"/>
+          <text x="63" y="60" font-size="14" fill="white" font-family="sans-serif" font-weight="bold">⏻</text>
+          <text x="38" y="110" font-size="10" fill="#8b949e" font-family="sans-serif">Spike Prime</text>
+          <!-- Arrow -->
+          <path d="M130 60 L210 60" stroke="#58a6ff" stroke-width="2" stroke-dasharray="6 4"/>
+          <polygon points="210,55 220,60 210,65" fill="#58a6ff"/>
+          <text x="140" y="50" font-size="10" fill="#79c0ff" font-family="sans-serif">Bluetooth</text>
+          <!-- Browser -->
+          <rect x="240" y="15" width="220" height="90" rx="8" fill="#1e1e1e" stroke="#3e3e42" stroke-width="2"/>
+          <rect x="240" y="15" width="220" height="22" rx="8" fill="#333"/>
+          <circle cx="256" cy="26" r="4" fill="#f44336"/>
+          <circle cx="270" cy="26" r="4" fill="#ff9800"/>
+          <circle cx="284" cy="26" r="4" fill="#4caf50"/>
+          <text x="310" y="30" font-size="9" fill="#8b949e" font-family="sans-serif">Code Pybricks</text>
+          <text x="290" y="70" font-size="12" fill="#58a6ff" font-family="sans-serif" font-weight="600">🔵 Connected</text>
+          <text x="290" y="90" font-size="10" fill="#a5d6a7" font-family="sans-serif">✓ Pybricks Hub</text>
+        </svg>
+      </div>
+
+      <div class="warning">
+        <strong>⚠ Browser Compatibility:</strong> Web Bluetooth requires <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong>, or <strong>Opera</strong>. Safari and Firefox do not support Web Bluetooth yet.
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── 3. Python Editor ── -->
+    <section class="faq-section" id="python-editor">
+      <h2>3. Using the Python Editor</h2>
+      <p>The Python editor is the default coding mode. Write Pybricks MicroPython code and run it directly on your hub or in the simulator.</p>
+
+      <div class="step-box">
+        <span class="step-num">1</span>
+        <strong>Select the "Python" tab in the toolbar</strong>
+      </div>
+      <div class="step-box">
+        <span class="step-num">2</span>
+        <strong>Write your Python code</strong>
+        <p>The editor supports syntax highlighting, auto-complete, and error checking.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">3</span>
+        <strong>Click ▶ Run to execute</strong>
+        <p>If connected to a hub, the code runs on the physical hub. If the simulator is open, it runs in the 3D simulator.</p>
+      </div>
+
+      <p>Example code:</p>
+      <pre><span class="kw">from</span> pybricks.hubs <span class="kw">import</span> <span class="fn">PrimeHub</span>
+<span class="kw">from</span> pybricks.pupdevices <span class="kw">import</span> <span class="fn">Motor</span>
+<span class="kw">from</span> pybricks.parameters <span class="kw">import</span> Port, Color
+<span class="kw">from</span> pybricks.robotics <span class="kw">import</span> <span class="fn">DriveBase</span>
+
+hub = <span class="fn">PrimeHub</span>()
+hub.light.on(Color.<span class="str">BLUE</span>)
+
+<span class="cmt"># Set up motors and drive base</span>
+left_motor = <span class="fn">Motor</span>(Port.A)
+right_motor = <span class="fn">Motor</span>(Port.B)
+drive_base = <span class="fn">DriveBase</span>(left_motor, right_motor, <span class="num">56</span>, <span class="num">114</span>)
+
+<span class="cmt"># Drive forward 200mm then turn right 90°</span>
+drive_base.straight(<span class="num">200</span>)
+drive_base.turn(<span class="num">90</span>)</pre>
+
+      <div class="tip">
+        <strong>💡 Tip:</strong> Use <kbd>Ctrl</kbd>+<kbd>S</kbd> to save your program, and <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to quickly run the code.
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── 4. Blocks Editor ── -->
+    <section class="faq-section" id="blocks-editor">
+      <h2>4. Using the Blocks Editor</h2>
+      <p>The Blocks editor lets you build programs visually using drag-and-drop blocks — great for beginners or quick prototyping.</p>
+
+      <div class="step-box">
+        <span class="step-num">1</span>
+        <strong>Select the "Blocks" tab in the toolbar</strong>
+      </div>
+      <div class="step-box">
+        <span class="step-num">2</span>
+        <strong>Drag blocks from the toolbox on the left</strong>
+        <p>Available categories: Movement, Sensors, Sound, Light, Logic, Loops, and more.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">3</span>
+        <strong>Snap blocks into the "When Run" hat block</strong>
+        <p>Only blocks connected to a "When Run" block will execute. Disconnected blocks are ignored.</p>
+      </div>
+
+      <div class="diagram">
+        <svg width="440" height="200" viewBox="0 0 440 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- When Run block -->
+          <path d="M40 30 L40 20 Q40 10 50 10 L130 10 Q140 10 140 20 L140 30 L120 30 L115 36 L85 36 L80 30 Z" fill="#FFAB19" stroke="#E89516" stroke-width="1.5"/>
+          <rect x="40" y="30" width="100" height="32" rx="0" fill="#FFAB19" stroke="#E89516" stroke-width="1.5"/>
+          <text x="55" y="50" font-size="11" fill="white" font-family="sans-serif" font-weight="600">When ▶ Run</text>
+          <!-- Drive forward -->
+          <rect x="50" y="62" width="160" height="30" rx="4" fill="#4C97FF" stroke="#3D79CC" stroke-width="1.5"/>
+          <text x="62" y="82" font-size="10" fill="white" font-family="sans-serif">Drive forward 200 mm</text>
+          <!-- Turn right -->
+          <rect x="50" y="92" width="160" height="30" rx="4" fill="#4C97FF" stroke="#3D79CC" stroke-width="1.5"/>
+          <text x="62" y="112" font-size="10" fill="white" font-family="sans-serif">Turn right 90 degrees</text>
+          <!-- Disconnected block (dimmed) -->
+          <rect x="270" y="80" width="140" height="30" rx="4" fill="#4C97FF" stroke="#3D79CC" stroke-width="1.5" opacity="0.35"/>
+          <text x="282" y="100" font-size="10" fill="white" font-family="sans-serif" opacity="0.4">Stop all motors</text>
+          <!-- Labels -->
+          <text x="52" y="150" font-size="11" fill="#3fb950" font-family="sans-serif">✓ Connected — will run</text>
+          <text x="270" y="130" font-size="11" fill="#f85149" font-family="sans-serif">✗ Disconnected — ignored</text>
+        </svg>
+      </div>
+
+      <div class="warning">
+        <strong>⚠ Important:</strong> Only blocks snapped into a "When Run" block will be executed. Loose blocks on the workspace are ignored.
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── 5. C Editor ── -->
+    <section class="faq-section" id="c-editor">
+      <h2>5. Using the C Editor</h2>
+      <p>The C editor is for advanced users who want to write low-level firmware code in C. This mode <strong>does not support the simulator</strong> — you need a physical hub to test C programs.</p>
+
+      <div class="step-box">
+        <span class="step-num">1</span>
+        <strong>Select the "C" tab in the toolbar</strong>
+      </div>
+      <div class="step-box">
+        <span class="step-num">2</span>
+        <strong>Write your C code using the Pybricks C API</strong>
+      </div>
+      <div class="step-box">
+        <span class="step-num">3</span>
+        <strong>Build &amp; flash via DFU mode</strong>
+        <p>C programs must be compiled into firmware and flashed to the hub using DFU (Device Firmware Upgrade) mode. Follow the instructions in the toolbar.</p>
+      </div>
+
+      <div class="warning">
+        <strong>⚠ Note:</strong> The C editor does not support Simulation Mode. Programs written in C require firmware flashing via DFU mode to run on the hub.
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── 6. Simulator ── -->
+    <section class="faq-section" id="simulator">
+      <h2>6. Using the Simulator</h2>
+      <p>The 3D simulator lets you test your Python and Blocks programs without a physical hub. It simulates motors, sensors, drive base movements, and more.</p>
+
+      <div class="step-box">
+        <span class="step-num">1</span>
+        <strong>Click the 🎮 Simulator button in the toolbar</strong>
+        <p>A new simulator window will open with a 3D view of the robot.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">2</span>
+        <strong>Write code in the Python or Blocks editor</strong>
+      </div>
+      <div class="step-box">
+        <span class="step-num">3</span>
+        <strong>Click ▶ Run — code executes in the simulator</strong>
+        <p>You'll see the virtual robot move, turn, and respond to your commands in real time.</p>
+      </div>
+
+      <div class="diagram">
+        <svg width="560" height="200" viewBox="0 0 560 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- IDE window -->
+          <rect x="10" y="10" width="200" height="150" rx="8" fill="#1e1e1e" stroke="#3e3e42" stroke-width="2"/>
+          <rect x="10" y="10" width="200" height="22" rx="8" fill="#333"/>
+          <text x="70" y="26" font-size="9" fill="#8b949e" font-family="sans-serif">Code Pybricks</text>
+          <text x="30" y="60" font-size="10" fill="#8b949e" font-family="monospace">drive_base.straight(200)</text>
+          <text x="30" y="78" font-size="10" fill="#8b949e" font-family="monospace">drive_base.turn(90)</text>
+          <text x="70" y="130" font-size="11" fill="#58a6ff" font-family="sans-serif" font-weight="600">IDE</text>
+          <!-- Arrow -->
+          <path d="M220 85 L290 85" stroke="#58a6ff" stroke-width="2" stroke-dasharray="6 4"/>
+          <polygon points="290,80 300,85 290,90" fill="#58a6ff"/>
+          <text x="225" y="75" font-size="9" fill="#79c0ff" font-family="sans-serif">BroadcastChannel</text>
+          <!-- Simulator window -->
+          <rect x="310" y="10" width="240" height="150" rx="8" fill="#0a0a0a" stroke="#3e3e42" stroke-width="2"/>
+          <rect x="310" y="10" width="240" height="22" rx="8" fill="#333"/>
+          <text x="380" y="26" font-size="9" fill="#8b949e" font-family="sans-serif">Simulator</text>
+          <!-- Grid floor -->
+          <line x1="330" y1="130" x2="530" y2="130" stroke="#2a2a2a" stroke-width="1"/>
+          <line x1="350" y1="140" x2="510" y2="140" stroke="#222" stroke-width="1"/>
+          <!-- Robot representation -->
+          <rect x="400" y="85" width="40" height="55" rx="6" fill="#444" stroke="#58a6ff" stroke-width="1.5"/>
+          <circle cx="408" cy="105" r="8" fill="#333" stroke="#666"/>
+          <circle cx="432" cy="105" r="8" fill="#333" stroke="#666"/>
+          <circle cx="420" cy="90" r="3" fill="#58a6ff"/>
+          <!-- Direction arrow -->
+          <path d="M420 80 L420 60" stroke="#4caf50" stroke-width="2"/>
+          <polygon points="415,62 420,52 425,62" fill="#4caf50"/>
+          <text x="390" y="150" font-size="11" fill="#58a6ff" font-family="sans-serif" font-weight="600">3D Simulator</text>
+        </svg>
+      </div>
+
+      <!-- ── 6a. Switching Maps ── -->
+      <h3 style="color:#e6edf3; margin-top:2rem; margin-bottom:0.75rem; font-size:1.1rem;">6a. Switching Maps</h3>
+      <p>The simulator has <strong>4 different maps</strong> to practice on. Use the <strong>Map</strong> dropdown in the simulator's HUD panel to switch between them.</p>
+
+      <div class="diagram">
+        <svg width="700" height="320" viewBox="0 0 700 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- HUD panel mock -->
+          <rect x="10" y="10" width="220" height="140" rx="6" fill="#1a1a2e" stroke="#3e3e42" stroke-width="1.5"/>
+          <text x="25" y="32" font-size="11" fill="#8b949e" font-family="sans-serif">Robot:</text>
+          <rect x="80" y="18" width="140" height="20" rx="3" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+          <text x="90" y="33" font-size="10" fill="#c9d1d9" font-family="sans-serif">Basic Claw Robot ▾</text>
+          <text x="25" y="60" font-size="11" fill="#8b949e" font-family="sans-serif">Map:</text>
+          <rect x="80" y="46" width="140" height="20" rx="3" fill="#0d419d" stroke="#58a6ff" stroke-width="1.5"/>
+          <text x="90" y="61" font-size="10" fill="#fff" font-family="sans-serif" font-weight="600">Map with Cans ▾</text>
+          <!-- Arrow pointing to dropdown -->
+          <path d="M240 56 L260 56" stroke="#58a6ff" stroke-width="2"/>
+          <polygon points="260,52 268,56 260,60" fill="#58a6ff"/>
+          <text x="275" y="60" font-size="10" fill="#58a6ff" font-family="sans-serif" font-weight="600">← Click to switch</text>
+          <!-- Claw buttons -->
+          <rect x="25" y="74" width="75" height="20" rx="3" fill="#238636" stroke="none"/>
+          <text x="35" y="88" font-size="9" fill="#fff" font-family="sans-serif">Open Claw</text>
+          <rect x="108" y="74" width="75" height="20" rx="3" fill="#da3633" stroke="none"/>
+          <text x="114" y="88" font-size="9" fill="#fff" font-family="sans-serif">Close Claw</text>
+          <!-- Grip slider -->
+          <text x="25" y="115" font-size="10" fill="#8b949e" font-family="sans-serif">Wheel Grip:</text>
+          <rect x="105" y="105" width="100" height="6" rx="3" fill="#21262d"/>
+          <rect x="105" y="105" width="30" height="6" rx="3" fill="#58a6ff"/>
+          <circle cx="135" cy="108" r="5" fill="#fff" stroke="#58a6ff" stroke-width="1.5"/>
+          <text x="210" y="113" font-size="9" fill="#8b949e" font-family="sans-serif">30%</text>
+          <text x="25" y="140" font-size="9" fill="#79c0ff" font-family="sans-serif">Input: Keyboard</text>
+
+          <!-- 4 map thumbnails -->
+          <text x="10" y="180" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="600">Available Maps:</text>
+
+          <!-- Map 1: Cans -->
+          <rect x="10" y="192" width="155" height="105" rx="6" fill="#1a2332" stroke="#58a6ff" stroke-width="2"/>
+          <rect x="18" y="200" width="139" height="68" rx="3" fill="#0d1117"/>
+          <!-- Grid -->
+          <line x1="18" y1="222" x2="157" y2="222" stroke="#1a2a3a" stroke-width="0.5"/>
+          <line x1="18" y1="244" x2="157" y2="244" stroke="#1a2a3a" stroke-width="0.5"/>
+          <line x1="64" y1="200" x2="64" y2="268" stroke="#1a2a3a" stroke-width="0.5"/>
+          <line x1="110" y1="200" x2="110" y2="268" stroke="#1a2a3a" stroke-width="0.5"/>
+          <!-- Cans (circles) -->
+          <circle cx="45" cy="215" r="5" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
+          <circle cx="95" cy="240" r="5" fill="#2ecc71" stroke="#27ae60" stroke-width="1"/>
+          <circle cx="130" cy="210" r="5" fill="#3498db" stroke="#2980b9" stroke-width="1"/>
+          <circle cx="75" cy="255" r="5" fill="#f39c12" stroke="#e67e22" stroke-width="1"/>
+          <!-- Robot -->
+          <rect x="30" y="235" width="12" height="16" rx="2" fill="#555" stroke="#58a6ff" stroke-width="1"/>
+          <text x="42" y="282" font-size="10" fill="#58a6ff" font-family="sans-serif" font-weight="600">Map with Cans</text>
+          <text x="22" y="294" font-size="8" fill="#8b949e" font-family="sans-serif">Colored cans to grab with claw</text>
+
+          <!-- Map 2: Line Follow -->
+          <rect x="180" y="192" width="155" height="105" rx="6" fill="#1a2332" stroke="#30363d" stroke-width="1.5"/>
+          <rect x="188" y="200" width="139" height="68" rx="3" fill="#f5f5f0"/>
+          <!-- Line track -->
+          <path d="M200 234 Q220 210 250 234 Q280 258 310 234" stroke="#111" stroke-width="3" fill="none"/>
+          <rect x="200" y="238" width="12" height="16" rx="2" fill="#555" stroke="#58a6ff" stroke-width="1"/>
+          <text x="215" y="282" font-size="10" fill="#79c0ff" font-family="sans-serif" font-weight="600">Line Follow</text>
+          <text x="195" y="294" font-size="8" fill="#8b949e" font-family="sans-serif">Black line on white surface</text>
+
+          <!-- Map 3: Line Intermediate -->
+          <rect x="350" y="192" width="155" height="105" rx="6" fill="#1a2332" stroke="#30363d" stroke-width="1.5"/>
+          <rect x="358" y="200" width="139" height="68" rx="3" fill="#f5f5f0"/>
+          <!-- Complex line -->
+          <path d="M370 234 Q390 205 420 220 Q440 235 460 215 Q475 200 490 228" stroke="#111" stroke-width="3" fill="none"/>
+          <!-- Intersections -->
+          <path d="M410 250 L430 210" stroke="#111" stroke-width="2.5" fill="none"/>
+          <rect x="370" y="238" width="12" height="16" rx="2" fill="#555" stroke="#58a6ff" stroke-width="1"/>
+          <text x="368" y="282" font-size="10" fill="#79c0ff" font-family="sans-serif" font-weight="600">Line Intermediate</text>
+          <text x="362" y="294" font-size="8" fill="#8b949e" font-family="sans-serif">Harder curves &amp; intersections</text>
+
+          <!-- Map 4: Maze -->
+          <rect x="520" y="192" width="155" height="105" rx="6" fill="#1a2332" stroke="#30363d" stroke-width="1.5"/>
+          <rect x="528" y="200" width="139" height="68" rx="3" fill="#0d1117"/>
+          <!-- Maze walls -->
+          <line x1="548" y1="200" x2="548" y2="242" stroke="#888" stroke-width="3"/>
+          <line x1="548" y1="242" x2="588" y2="242" stroke="#888" stroke-width="3"/>
+          <line x1="575" y1="200" x2="575" y2="225" stroke="#888" stroke-width="3"/>
+          <line x1="600" y1="220" x2="600" y2="268" stroke="#888" stroke-width="3"/>
+          <line x1="620" y1="200" x2="620" y2="248" stroke="#888" stroke-width="3"/>
+          <line x1="640" y1="230" x2="660" y2="230" stroke="#888" stroke-width="3"/>
+          <line x1="540" y1="258" x2="580" y2="258" stroke="#888" stroke-width="3"/>
+          <!-- Robot -->
+          <rect x="535" y="210" width="10" height="14" rx="2" fill="#555" stroke="#58a6ff" stroke-width="1"/>
+          <!-- Finish -->
+          <rect x="648" y="250" width="12" height="12" rx="1" fill="#4caf50"/>
+          <text x="569" y="282" font-size="10" fill="#79c0ff" font-family="sans-serif" font-weight="600">Maze</text>
+          <text x="535" y="294" font-size="8" fill="#8b949e" font-family="sans-serif">Navigate walls to the exit</text>
+        </svg>
+      </div>
+
+      <div class="tip">
+        <strong>💡 Tip:</strong> The "Basic Claw Robot" works best with "Map with Cans" and "Maze". The "Line Follow Robot" is optimized for the line-follow maps with color sensors.
+      </div>
+
+      <!-- ── 6b. Keyboard Navigation ── -->
+      <h3 style="color:#e6edf3; margin-top:2rem; margin-bottom:0.75rem; font-size:1.1rem;">6b. Keyboard Navigation Controls</h3>
+      <p>Drive the robot manually using your keyboard. This works in <strong>keyboard input mode</strong> (the default when no hub is connected).</p>
+
+      <div class="diagram">
+        <svg width="680" height="300" viewBox="0 0 680 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Title -->
+          <text x="245" y="24" font-size="13" fill="#e6edf3" font-family="sans-serif" font-weight="700">Keyboard Controls</text>
+
+          <!-- === Arrow Keys section === -->
+          <text x="90" y="55" font-size="11" fill="#79c0ff" font-family="sans-serif" font-weight="600">Arrow Keys</text>
+
+          <!-- Up Arrow -->
+          <rect x="100" y="66" width="50" height="42" rx="6" fill="#21262d" stroke="#58a6ff" stroke-width="2"/>
+          <text x="119" y="86" font-size="14" fill="#e6edf3" font-family="sans-serif" font-weight="700">↑</text>
+          <text x="107" y="101" font-size="7" fill="#8b949e" font-family="sans-serif">Forward</text>
+          <!-- Left Arrow -->
+          <rect x="42" y="114" width="50" height="42" rx="6" fill="#21262d" stroke="#58a6ff" stroke-width="2"/>
+          <text x="61" y="134" font-size="14" fill="#e6edf3" font-family="sans-serif" font-weight="700">←</text>
+          <text x="55" y="148" font-size="7" fill="#8b949e" font-family="sans-serif">Left</text>
+          <!-- Down Arrow -->
+          <rect x="100" y="114" width="50" height="42" rx="6" fill="#21262d" stroke="#58a6ff" stroke-width="2"/>
+          <text x="119" y="134" font-size="14" fill="#e6edf3" font-family="sans-serif" font-weight="700">↓</text>
+          <text x="105" y="149" font-size="7" fill="#8b949e" font-family="sans-serif">Backward</text>
+          <!-- Right Arrow -->
+          <rect x="158" y="114" width="50" height="42" rx="6" fill="#21262d" stroke="#58a6ff" stroke-width="2"/>
+          <text x="177" y="134" font-size="14" fill="#e6edf3" font-family="sans-serif" font-weight="700">→</text>
+          <text x="168" y="149" font-size="7" fill="#8b949e" font-family="sans-serif">Right</text>
+
+          <!-- OR divider -->
+          <text x="120" y="190" font-size="11" fill="#484f58" font-family="sans-serif">— or —</text>
+
+          <!-- === WASD Keys section === -->
+          <text x="97" y="215" font-size="11" fill="#79c0ff" font-family="sans-serif" font-weight="600">WASD Keys</text>
+
+          <!-- W -->
+          <rect x="100" y="225" width="50" height="42" rx="6" fill="#21262d" stroke="#3fb950" stroke-width="2"/>
+          <text x="117" y="250" font-size="16" fill="#e6edf3" font-family="sans-serif" font-weight="700">W</text>
+          <!-- A -->
+          <rect x="42" y="273" width="50" height="22" rx="5" fill="#21262d" stroke="#3fb950" stroke-width="1.5"/>
+          <text x="62" y="289" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="700">A</text>
+          <!-- S -->
+          <rect x="100" y="273" width="50" height="22" rx="5" fill="#21262d" stroke="#3fb950" stroke-width="1.5"/>
+          <text x="121" y="289" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="700">S</text>
+          <!-- D -->
+          <rect x="158" y="273" width="50" height="22" rx="5" fill="#21262d" stroke="#3fb950" stroke-width="1.5"/>
+          <text x="179" y="289" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="700">D</text>
+
+          <!-- ═══ Separator ═══ -->
+          <line x1="250" y1="50" x2="250" y2="290" stroke="#21262d" stroke-width="1"/>
+
+          <!-- === Special Keys === -->
+          <text x="340" y="55" font-size="11" fill="#79c0ff" font-family="sans-serif" font-weight="600">Special Keys</text>
+
+          <!-- Space bar -->
+          <rect x="280" y="70" width="168" height="38" rx="6" fill="#21262d" stroke="#f0883e" stroke-width="2"/>
+          <text x="324" y="94" font-size="14" fill="#e6edf3" font-family="sans-serif" font-weight="700">SPACE</text>
+          <text x="460" y="94" font-size="10" fill="#f0883e" font-family="sans-serif" font-weight="600">→ Brake / Stop</text>
+
+          <!-- O key -->
+          <rect x="280" y="120" width="50" height="38" rx="6" fill="#21262d" stroke="#238636" stroke-width="2"/>
+          <text x="299" y="144" font-size="16" fill="#e6edf3" font-family="sans-serif" font-weight="700">O</text>
+          <text x="342" y="144" font-size="10" fill="#3fb950" font-family="sans-serif" font-weight="600">→ Open Claw</text>
+
+          <!-- P key -->
+          <rect x="280" y="170" width="50" height="38" rx="6" fill="#21262d" stroke="#da3633" stroke-width="2"/>
+          <text x="300" y="194" font-size="16" fill="#e6edf3" font-family="sans-serif" font-weight="700">P</text>
+          <text x="342" y="194" font-size="10" fill="#f85149" font-family="sans-serif" font-weight="600">→ Close Claw</text>
+
+          <!-- Camera controls -->
+          <text x="340" y="240" font-size="11" fill="#79c0ff" font-family="sans-serif" font-weight="600">Camera Controls</text>
+
+          <!-- Mouse icons -->
+          <rect x="280" y="254" width="30" height="22" rx="4" fill="#21262d" stroke="#8b949e" stroke-width="1.5"/>
+          <line x1="295" y1="254" x2="295" y2="268" stroke="#8b949e" stroke-width="0.5"/>
+          <rect x="290" y="255" width="10" height="6" rx="2" fill="#58a6ff"/>
+          <text x="320" y="270" font-size="10" fill="#8b949e" font-family="sans-serif">Click + Drag → Rotate camera</text>
+
+          <rect x="280" y="284" width="30" height="12" rx="4" fill="#21262d" stroke="#8b949e" stroke-width="1.5"/>
+          <rect x="290" y="282" width="10" height="8" rx="2" fill="#58a6ff"/>
+          <text x="284" y="291" font-size="6" fill="#e6edf3" font-family="sans-serif">↕</text>
+          <text x="320" y="294" font-size="10" fill="#8b949e" font-family="sans-serif">Scroll → Zoom in/out</text>
+        </svg>
+      </div>
+
+      <div class="tip">
+        <strong>💡 Tip:</strong> Arrow keys and WASD both work the same way. Hold a key to keep moving — release to stop. Combine forward + left/right to steer while driving.
+      </div>
+
+      <!-- ── 6c. Claw Grabbing Cans ── -->
+      <h3 style="color:#e6edf3; margin-top:2rem; margin-bottom:0.75rem; font-size:1.1rem;">6c. Grabbing Cans with the Claw</h3>
+      <p>The "Basic Claw Robot" has a motorized gripper that can <strong>pick up and release colored cans</strong> on the "Map with Cans". Here's how it works:</p>
+
+      <div class="diagram">
+        <svg width="720" height="380" viewBox="0 0 720 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- ═══ Step 1: Approach ═══ -->
+          <text x="40" y="24" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="700">Step 1: Drive toward a can</text>
+
+          <!-- Ground -->
+          <rect x="20" y="35" width="200" height="120" rx="6" fill="#0d1117" stroke="#21262d" stroke-width="1"/>
+          <line x1="20" y1="120" x2="220" y2="120" stroke="#1a2a3a" stroke-width="0.5"/>
+
+          <!-- Can -->
+          <rect x="160" y="82" width="16" height="24" rx="4" fill="#e74c3c" stroke="#c0392b" stroke-width="1.5"/>
+          <ellipse cx="168" cy="82" rx="8" ry="3" fill="#ff6b6b" opacity="0.5"/>
+
+          <!-- Robot approaching -->
+          <rect x="60" y="78" width="45" height="35" rx="5" fill="#444" stroke="#58a6ff" stroke-width="1.5"/>
+          <circle cx="70" cy="100" r="7" fill="#333" stroke="#666" stroke-width="1"/>
+          <circle cx="95" cy="100" r="7" fill="#333" stroke="#666" stroke-width="1"/>
+          <!-- Claw open -->
+          <line x1="105" y1="82" x2="120" y2="76" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="105" y1="102" x2="120" y2="108" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Hub light -->
+          <circle cx="82" cy="85" r="3" fill="#58a6ff"/>
+          <!-- Arrow -->
+          <path d="M125 92 L148 92" stroke="#4caf50" stroke-width="2"/>
+          <polygon points="148,88 156,92 148,96" fill="#4caf50"/>
+
+          <!-- Keyboard hint -->
+          <rect x="30" y="132" width="26" height="18" rx="3" fill="#21262d" stroke="#58a6ff" stroke-width="1"/>
+          <text x="37" y="145" font-size="9" fill="#e6edf3" font-family="sans-serif" font-weight="700">W</text>
+          <text x="62" y="146" font-size="9" fill="#8b949e" font-family="sans-serif">Drive forward toward the can</text>
+
+          <!-- ═══ Step 2: Close claw ═══ -->
+          <text x="270" y="24" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="700">Step 2: Close claw to grab</text>
+
+          <rect x="250" y="35" width="200" height="120" rx="6" fill="#0d1117" stroke="#21262d" stroke-width="1"/>
+          <line x1="250" y1="120" x2="450" y2="120" stroke="#1a2a3a" stroke-width="0.5"/>
+
+          <!-- Robot with can grabbed -->
+          <rect x="305" y="78" width="45" height="35" rx="5" fill="#444" stroke="#58a6ff" stroke-width="1.5"/>
+          <circle cx="315" cy="100" r="7" fill="#333" stroke="#666" stroke-width="1"/>
+          <circle cx="340" cy="100" r="7" fill="#333" stroke="#666" stroke-width="1"/>
+          <circle cx="327" cy="85" r="3" fill="#58a6ff"/>
+          <!-- Can between claw jaws (closed) -->
+          <rect x="355" y="84" width="14" height="20" rx="3" fill="#e74c3c" stroke="#c0392b" stroke-width="1.5"/>
+          <!-- Claw closed around can -->
+          <line x1="350" y1="84" x2="358" y2="80" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="350" y1="104" x2="358" y2="108" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Grip indicator -->
+          <path d="M367 88 L377 84" stroke="#3fb950" stroke-width="1.5"/>
+          <path d="M367 100 L377 104" stroke="#3fb950" stroke-width="1.5"/>
+          <text x="382" y="97" font-size="9" fill="#3fb950" font-family="sans-serif" font-weight="600">Grabbed!</text>
+
+          <!-- Keyboard hint -->
+          <rect x="260" y="132" width="26" height="18" rx="3" fill="#21262d" stroke="#da3633" stroke-width="1.5"/>
+          <text x="268" y="145" font-size="9" fill="#e6edf3" font-family="sans-serif" font-weight="700">P</text>
+          <text x="293" y="146" font-size="9" fill="#f85149" font-family="sans-serif">Close claw — grips the can</text>
+
+          <!-- ═══ Step 3: Carry & release ═══ -->
+          <text x="500" y="24" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="700">Step 3: Carry &amp; release</text>
+
+          <rect x="480" y="35" width="220" height="120" rx="6" fill="#0d1117" stroke="#21262d" stroke-width="1"/>
+          <line x1="480" y1="120" x2="700" y2="120" stroke="#1a2a3a" stroke-width="0.5"/>
+
+          <!-- Robot carrying can, moved elsewhere -->
+          <rect x="530" y="78" width="45" height="35" rx="5" fill="#444" stroke="#58a6ff" stroke-width="1.5"/>
+          <circle cx="540" cy="100" r="7" fill="#333" stroke="#666" stroke-width="1"/>
+          <circle cx="565" cy="100" r="7" fill="#333" stroke="#666" stroke-width="1"/>
+          <circle cx="552" cy="85" r="3" fill="#3fb950"/>
+          <!-- Claw opening, releasing can -->
+          <line x1="575" y1="82" x2="590" y2="76" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="575" y1="102" x2="590" y2="108" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Can falling/released -->
+          <rect x="595" y="86" width="14" height="20" rx="3" fill="#e74c3c" stroke="#c0392b" stroke-width="1.5" opacity="0.7"/>
+          <!-- Drop arrow -->
+          <path d="M602 110 L602 118" stroke="#f0883e" stroke-width="1.5"/>
+          <polygon points="598,116 602,122 606,116" fill="#f0883e"/>
+
+          <!-- Keyboard hint -->
+          <rect x="490" y="132" width="26" height="18" rx="3" fill="#21262d" stroke="#238636" stroke-width="1.5"/>
+          <text x="497" y="145" font-size="9" fill="#e6edf3" font-family="sans-serif" font-weight="700">O</text>
+          <text x="523" y="146" font-size="9" fill="#3fb950" font-family="sans-serif">Open claw — releases the can</text>
+
+          <!-- ═══ Programming example ═══ -->
+          <rect x="20" y="175" width="680" height="195" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+          <text x="40" y="200" font-size="12" fill="#79c0ff" font-family="sans-serif" font-weight="600">📝 Do it with code instead:</text>
+
+          <!-- Python code -->
+          <text x="40" y="226" font-size="11" fill="#8b949e" font-family="monospace">1</text>
+          <text x="62" y="226" font-size="11" fill="#ff7b72" font-family="monospace">from</text>
+          <text x="100" y="226" font-size="11" fill="#c9d1d9" font-family="monospace">pybricks.hubs</text>
+          <text x="215" y="226" font-size="11" fill="#ff7b72" font-family="monospace">import</text>
+          <text x="268" y="226" font-size="11" fill="#d2a8ff" font-family="monospace">PrimeHub</text>
+
+          <text x="40" y="246" font-size="11" fill="#8b949e" font-family="monospace">2</text>
+          <text x="62" y="246" font-size="11" fill="#ff7b72" font-family="monospace">from</text>
+          <text x="100" y="246" font-size="11" fill="#c9d1d9" font-family="monospace">pybricks.pupdevices</text>
+          <text x="265" y="246" font-size="11" fill="#ff7b72" font-family="monospace">import</text>
+          <text x="318" y="246" font-size="11" fill="#d2a8ff" font-family="monospace">Motor</text>
+
+          <text x="40" y="266" font-size="11" fill="#8b949e" font-family="monospace">3</text>
+          <text x="62" y="266" font-size="11" fill="#ff7b72" font-family="monospace">from</text>
+          <text x="100" y="266" font-size="11" fill="#c9d1d9" font-family="monospace">pybricks.parameters</text>
+          <text x="262" y="266" font-size="11" fill="#ff7b72" font-family="monospace">import</text>
+          <text x="314" y="266" font-size="11" fill="#c9d1d9" font-family="monospace">Port</text>
+
+          <text x="40" y="290" font-size="11" fill="#8b949e" font-family="monospace">4</text>
+          <text x="62" y="290" font-size="11" fill="#8b949e" font-family="monospace"># Drive forward, close claw, reverse</text>
+
+          <text x="40" y="310" font-size="11" fill="#8b949e" font-family="monospace">5</text>
+          <text x="62" y="310" font-size="11" fill="#c9d1d9" font-family="monospace">drive_base.straight(</text>
+          <text x="230" y="310" font-size="11" fill="#79c0ff" font-family="monospace">200</text>
+          <text x="255" y="310" font-size="11" fill="#c9d1d9" font-family="monospace">)</text>
+          <text x="280" y="310" font-size="10" fill="#8b949e" font-family="monospace"># approach the can</text>
+
+          <text x="40" y="330" font-size="11" fill="#8b949e" font-family="monospace">6</text>
+          <text x="62" y="330" font-size="11" fill="#d2a8ff" font-family="monospace">Motor</text>
+          <text x="100" y="330" font-size="11" fill="#c9d1d9" font-family="monospace">(Port.A).run_angle(</text>
+          <text x="250" y="330" font-size="11" fill="#79c0ff" font-family="monospace">200</text>
+          <text x="275" y="330" font-size="11" fill="#c9d1d9" font-family="monospace">,</text>
+          <text x="285" y="330" font-size="11" fill="#79c0ff" font-family="monospace">-90</text>
+          <text x="312" y="330" font-size="11" fill="#c9d1d9" font-family="monospace">)</text>
+          <text x="325" y="330" font-size="10" fill="#8b949e" font-family="monospace"># close claw</text>
+
+          <text x="40" y="350" font-size="11" fill="#8b949e" font-family="monospace">7</text>
+          <text x="62" y="350" font-size="11" fill="#c9d1d9" font-family="monospace">drive_base.straight(</text>
+          <text x="230" y="350" font-size="11" fill="#79c0ff" font-family="monospace">-200</text>
+          <text x="263" y="350" font-size="11" fill="#c9d1d9" font-family="monospace">)</text>
+          <text x="280" y="350" font-size="10" fill="#8b949e" font-family="monospace"># reverse with can</text>
+        </svg>
+      </div>
+
+      <div class="warning">
+        <strong>⚠ Important:</strong> The claw only works with the <strong>"Basic Claw Robot"</strong> robot type. Make sure to select it from the Robot dropdown. The claw must be close enough to the can to grab it — drive right up to it first!
+      </div>
+
+      <p><strong>Summary of all simulator controls:</strong></p>
+      <ul>
+        <li><kbd>W</kbd> / <kbd>↑</kbd> — Drive forward</li>
+        <li><kbd>S</kbd> / <kbd>↓</kbd> — Drive backward</li>
+        <li><kbd>A</kbd> / <kbd>←</kbd> — Steer left</li>
+        <li><kbd>D</kbd> / <kbd>→</kbd> — Steer right</li>
+        <li><kbd>Space</kbd> — Brake / stop immediately</li>
+        <li><kbd>O</kbd> — Open claw</li>
+        <li><kbd>P</kbd> — Close claw</li>
+        <li><strong>Mouse drag</strong> — Rotate camera</li>
+        <li><strong>Scroll wheel</strong> — Zoom in/out</li>
+      </ul>
+    </section>
+
+    <!-- ──────────────────────────────────── 7. File Management ── -->
+    <section class="faq-section" id="file-management">
+      <h2>7. Saving &amp; Loading Files</h2>
+      <p>Your code is automatically saved in the browser's local storage. You can also export and import files.</p>
+
+      <ul>
+        <li><strong>Save/Download:</strong> Click the <strong>Download</strong> icon in the toolbar to save your program as a <code>.py</code>, <code>.xml</code>, or <code>.c</code> file.</li>
+        <li><strong>Open/Import:</strong> Click the <strong>Upload</strong> icon to load a program file from your computer.</li>
+        <li><strong>New File:</strong> Click the <strong>New File</strong> icon to start a fresh program.</li>
+      </ul>
+
+      <div class="tip">
+        <strong>💡 Tip:</strong> The Python, Blocks, and C editors each maintain their own code independently. Switching tabs doesn't overwrite your work.
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── 8. AI Assistant ── -->
+    <section class="faq-section" id="ai-assistant">
+      <h2>8. AI Assistant</h2>
+      <p>The built-in AI assistant can help you write code, explain concepts, debug errors, and learn Pybricks APIs. <strong>This is a premium feature</strong> — you need an active subscription to use it.</p>
+
+      <!-- 8a. Opening the AI panel -->
+      <h3 style="margin-top:1.5rem;">8a. Opening the AI Panel</h3>
+      <div class="step-box">
+        <span class="step-num">1</span>
+        <strong>Click the ✨ AI button in the toolbar</strong>
+        <p>The AI panel slides open on the right side of the editor.</p>
+      </div>
+
+      <!-- Diagram: toolbar with AI button highlighted -->
+      <svg viewBox="0 0 760 50" style="max-width:760px;width:100%;height:auto;display:block;margin:0.5rem auto 1rem;">
+        <rect width="760" height="50" rx="6" fill="#161b22" stroke="#30363d"/>
+        <!-- toolbar buttons -->
+        <rect x="10" y="10" width="60" height="30" rx="4" fill="#21262d"/>
+        <text x="40" y="30" text-anchor="middle" font-size="10" fill="#8b949e" font-family="sans-serif">Python</text>
+        <rect x="80" y="10" width="60" height="30" rx="4" fill="#21262d"/>
+        <text x="110" y="30" text-anchor="middle" font-size="10" fill="#8b949e" font-family="sans-serif">Blocks</text>
+        <rect x="150" y="10" width="40" height="30" rx="4" fill="#21262d"/>
+        <text x="170" y="30" text-anchor="middle" font-size="10" fill="#8b949e" font-family="sans-serif">C</text>
+        <rect x="220" y="10" width="40" height="30" rx="4" fill="#21262d"/>
+        <text x="240" y="30" text-anchor="middle" font-size="10" fill="#8b949e" font-family="sans-serif">▶ Run</text>
+        <!-- AI button (highlighted) -->
+        <rect x="680" y="8" width="70" height="34" rx="6" fill="#58a6ff" stroke="#79c0ff" stroke-width="2"/>
+        <text x="715" y="30" text-anchor="middle" font-size="11" fill="#fff" font-family="sans-serif" font-weight="700">✨ AI</text>
+        <!-- arrow -->
+        <line x1="715" y1="48" x2="715" y2="50" stroke="#58a6ff" stroke-width="2"/>
+      </svg>
+
+      <!-- 8b. Subscribe prompt -->
+      <h3 style="margin-top:1.5rem;">8b. Subscription Required</h3>
+      <p>If you haven't subscribed yet, you'll see a prompt at the bottom of the AI panel asking you to subscribe:</p>
+
+      <!-- Diagram: AI panel with subscribe overlay -->
+      <svg viewBox="0 0 340 310" style="max-width:340px;width:100%;height:auto;display:block;margin:0.5rem auto 1rem;">
+        <!-- Panel background -->
+        <rect width="340" height="310" rx="8" fill="#161b22" stroke="#30363d"/>
+        <!-- Header -->
+        <rect x="0" y="0" width="340" height="40" rx="8" fill="#1c2129"/>
+        <rect x="0" y="20" width="340" height="20" fill="#1c2129"/>
+        <text x="16" y="26" font-size="13" fill="#58a6ff" font-family="sans-serif" font-weight="600">✨ AI Assistant</text>
+        <rect x="192" y="11" width="50" height="18" rx="4" fill="#21262d"/>
+        <text x="217" y="24" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Gemini</text>
+        <text x="312" y="26" font-size="14" fill="#8b949e" font-family="sans-serif">✕</text>
+
+        <!-- Welcome area -->
+        <circle cx="170" cy="80" r="20" fill="#21262d"/>
+        <text x="170" y="86" text-anchor="middle" font-size="16" fill="#58a6ff" font-family="sans-serif">🤖</text>
+        <text x="170" y="115" text-anchor="middle" font-size="12" fill="#e6edf3" font-family="sans-serif" font-weight="600">Spike Prime AI Assistant</text>
+        <text x="170" y="135" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Ask me about Spike Prime coding!</text>
+
+        <!-- Quick prompts -->
+        <text x="16" y="165" font-size="9" fill="#8b949e" font-family="sans-serif">Quick prompts:</text>
+        <rect x="16" y="175" width="90" height="22" rx="4" fill="#21262d"/>
+        <text x="61" y="190" text-anchor="middle" font-size="8" fill="#c9d1d9" font-family="sans-serif">🚗 Drive forward</text>
+        <rect x="114" y="175" width="80" height="22" rx="4" fill="#21262d"/>
+        <text x="154" y="190" text-anchor="middle" font-size="8" fill="#c9d1d9" font-family="sans-serif">🎨 Line follow</text>
+        <rect x="202" y="175" width="76" height="22" rx="4" fill="#21262d"/>
+        <text x="240" y="190" text-anchor="middle" font-size="8" fill="#c9d1d9" font-family="sans-serif">🔊 Play sound</text>
+
+        <!-- Subscribe overlay at bottom -->
+        <rect x="0" y="210" width="340" height="100" rx="0" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+        <!-- Sparkle icon -->
+        <text x="170" y="238" text-anchor="middle" font-size="16" fill="#58a6ff" font-family="sans-serif">✨</text>
+        <text x="170" y="256" text-anchor="middle" font-size="10" fill="#e6edf3" font-family="sans-serif" font-weight="600">AI Assistant is a premium feature.</text>
+        <text x="170" y="271" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Subscribe to unlock AI-powered help.</text>
+        <!-- Subscribe button -->
+        <rect x="110" y="280" width="120" height="24" rx="6" fill="#58a6ff"/>
+        <text x="170" y="296" text-anchor="middle" font-size="10" fill="#fff" font-family="sans-serif" font-weight="700">Subscribe to Unlock</text>
+      </svg>
+      <p style="text-align:center;color:#8b949e;font-size:0.82rem;margin-top:-0.5rem;">Non-subscribers see a "Subscribe to Unlock" prompt at the bottom of the AI panel.</p>
+
+      <div class="step-box">
+        <span class="step-num">2</span>
+        <strong>Click "Subscribe to Unlock"</strong>
+        <p>This opens the activation popup where you can choose a plan (1 month, 6 months, or 12 months) and subscribe via PayPal.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">3</span>
+        <strong>Enter your activation code</strong>
+        <p>After payment, you'll receive an activation code by email. Enter it in the popup to unlock AI (and unlimited editor usage).</p>
+      </div>
+
+      <!-- 8c. Using the AI assistant -->
+      <h3 style="margin-top:1.5rem;">8c. Using the AI Assistant</h3>
+      <p>Once subscribed, the input area becomes active:</p>
+
+      <!-- Diagram: active AI panel with conversation -->
+      <svg viewBox="0 0 340 320" style="max-width:340px;width:100%;height:auto;display:block;margin:0.5rem auto 1rem;">
+        <!-- Panel background -->
+        <rect width="340" height="320" rx="8" fill="#161b22" stroke="#30363d"/>
+        <!-- Header -->
+        <rect x="0" y="0" width="340" height="40" rx="8" fill="#1c2129"/>
+        <rect x="0" y="20" width="340" height="20" fill="#1c2129"/>
+        <text x="16" y="26" font-size="13" fill="#58a6ff" font-family="sans-serif" font-weight="600">✨ AI Assistant</text>
+        <rect x="192" y="11" width="50" height="18" rx="4" fill="#21262d"/>
+        <text x="217" y="24" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Gemini</text>
+
+        <!-- User message -->
+        <circle cx="22" cy="64" r="10" fill="#21262d"/>
+        <text x="22" y="68" text-anchor="middle" font-size="8" fill="#c9d1d9" font-family="sans-serif">👤</text>
+        <text x="40" y="58" font-size="9" fill="#8b949e" font-family="sans-serif" font-weight="600">You</text>
+        <text x="40" y="72" font-size="9" fill="#c9d1d9" font-family="sans-serif">Write code to drive forward 500mm</text>
+
+        <!-- AI response -->
+        <circle cx="22" cy="104" r="10" fill="#21262d"/>
+        <text x="22" y="108" text-anchor="middle" font-size="8" fill="#58a6ff" font-family="sans-serif">🤖</text>
+        <text x="40" y="98" font-size="9" fill="#8b949e" font-family="sans-serif" font-weight="600">Gemini</text>
+        <text x="40" y="112" font-size="9" fill="#c9d1d9" font-family="sans-serif">Here's the code:</text>
+
+        <!-- Code block -->
+        <rect x="40" y="120" width="280" height="130" rx="6" fill="#0d1117" stroke="#30363d"/>
+        <rect x="40" y="120" width="280" height="22" rx="6" fill="#161b22"/>
+        <rect x="40" y="134" width="280" height="8" fill="#161b22"/>
+        <text x="50" y="136" font-size="8" fill="#8b949e" font-family="sans-serif">python</text>
+        <rect x="256" y="125" width="28" height="14" rx="3" fill="#21262d"/>
+        <text x="270" y="135" text-anchor="middle" font-size="7" fill="#8b949e" font-family="sans-serif">Insert</text>
+        <rect x="290" y="125" width="24" height="14" rx="3" fill="#21262d"/>
+        <text x="302" y="135" text-anchor="middle" font-size="7" fill="#8b949e" font-family="sans-serif">Copy</text>
+
+        <text x="50" y="158" font-size="8" fill="#ff7b72" font-family="monospace">from</text>
+        <text x="72" y="158" font-size="8" fill="#c9d1d9" font-family="monospace">pybricks.hubs</text>
+        <text x="156" y="158" font-size="8" fill="#ff7b72" font-family="monospace">import</text>
+        <text x="190" y="158" font-size="8" fill="#c9d1d9" font-family="monospace">PrimeHub</text>
+        <text x="50" y="172" font-size="8" fill="#ff7b72" font-family="monospace">from</text>
+        <text x="72" y="172" font-size="8" fill="#c9d1d9" font-family="monospace">pybricks.pupdevices</text>
+        <text x="182" y="172" font-size="8" fill="#ff7b72" font-family="monospace">import</text>
+        <text x="216" y="172" font-size="8" fill="#c9d1d9" font-family="monospace">Motor</text>
+        <text x="50" y="186" font-size="8" fill="#c9d1d9" font-family="monospace">left = Motor(Port.A)</text>
+        <text x="50" y="200" font-size="8" fill="#c9d1d9" font-family="monospace">right = Motor(Port.B)</text>
+        <text x="50" y="214" font-size="8" fill="#c9d1d9" font-family="monospace">db = DriveBase(left, right,</text>
+        <text x="50" y="228" font-size="8" fill="#c9d1d9" font-family="monospace">    wheel_diameter=56, axle_track=114)</text>
+        <text x="50" y="242" font-size="8" fill="#79c0ff" font-family="monospace">db.straight(500)</text>
+
+        <!-- Input area -->
+        <rect x="0" y="264" width="340" height="56" fill="#0d1117"/>
+        <rect x="8" y="272" width="18" height="14" rx="3" fill="#21262d"/>
+        <text x="17" y="282" text-anchor="middle" font-size="7" fill="#8b949e" font-family="sans-serif">📎</text>
+        <text x="35" y="282" font-size="7" fill="#8b949e" font-family="sans-serif">Editor code will be shared as context</text>
+        <rect x="8" y="292" width="290" height="24" rx="6" fill="#21262d" stroke="#30363d"/>
+        <text x="18" y="308" font-size="9" fill="#484f58" font-family="sans-serif">Ask about Spike Prime coding...</text>
+        <rect x="306" y="292" width="26" height="24" rx="6" fill="#58a6ff"/>
+        <text x="319" y="308" text-anchor="middle" font-size="12" fill="#fff" font-family="sans-serif">➤</text>
+      </svg>
+      <p style="text-align:center;color:#8b949e;font-size:0.82rem;margin-top:-0.5rem;">The AI panel with a conversation — code blocks have Insert & Copy buttons.</p>
+
+      <div class="step-box">
+        <span class="step-num">4</span>
+        <strong>Type your question and press Enter</strong>
+        <p>The AI sees your current editor code as context. Ask it to write code, explain concepts, debug errors, or suggest improvements.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">5</span>
+        <strong>Use Insert or Copy on code blocks</strong>
+        <p>Click <strong>Insert</strong> to replace your editor content with the AI's suggestion. Click <strong>Copy</strong> to copy it to your clipboard.</p>
+      </div>
+      <div class="step-box">
+        <span class="step-num">6</span>
+        <strong>Try quick prompts</strong>
+        <p>When the chat is empty, quick prompt buttons are shown: Drive forward, Line follow, Play sound, Turn 90°, Display text, Read sensor, Explain code, and Fix errors.</p>
+      </div>
+
+      <div class="tip">
+        <strong>💡 Tip:</strong> The AI automatically receives your current code as context, so you can ask "What does this code do?" or "Fix the error on line 5" without pasting anything.
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── 9. Activation ── -->
+    <section class="faq-section" id="activation">
+      <h2>9. Activation &amp; Limits</h2>
+      <p>Code Pybricks offers a <strong>free tier</strong> with some limits:</p>
+      <ul>
+        <li><strong>Python / C:</strong> Free up to <strong>30 lines</strong> of code per program</li>
+        <li><strong>Blocks:</strong> Free up to <strong>30 blocks</strong> per program</li>
+      </ul>
+      <p>To remove these limits and unlock unlimited usage:</p>
+      <ol>
+        <li>Purchase an activation code via the <strong>PayPal link</strong> shown in the activation popup.</li>
+        <li>Enter your activation code in the popup dialog.</li>
+        <li>Once activated, there are no limits on code length or block count.</li>
+      </ol>
+
+      <div class="tip">
+        <strong>💡 Tip:</strong> Your activation status is saved in your browser. You only need to activate once per browser.
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────── 10. Troubleshooting ── -->
+    <section class="faq-section" id="troubleshooting">
+      <h2>10. Troubleshooting</h2>
+
+      <p><strong>Q: I can't connect to my hub.</strong></p>
+      <ul>
+        <li>Make sure you're using Chrome, Edge, or Opera (Web Bluetooth required).</li>
+        <li>Ensure the hub is turned on and Bluetooth is enabled on your computer.</li>
+        <li>Try turning the hub off and on again, then reconnect.</li>
+        <li>Check that the hub has Pybricks firmware installed.</li>
+      </ul>
+
+      <p><strong>Q: My code runs in the simulator but not on the hub.</strong></p>
+      <ul>
+        <li>Some simulator-specific blocks/functions don't translate directly. Use the Pybricks API for hub programs.</li>
+        <li>Make sure you're connected to the hub before clicking Run.</li>
+      </ul>
+
+      <p><strong>Q: The simulator doesn't open.</strong></p>
+      <ul>
+        <li>Make sure pop-ups are allowed for this site.</li>
+        <li>Try clicking the Simulator button again — it opens in a new window.</li>
+      </ul>
+
+      <p><strong>Q: My activation code doesn't work.</strong></p>
+      <ul>
+        <li>Make sure you entered the code exactly as received (it's case-insensitive).</li>
+        <li>Contact us at <a href="/contact.html">Contact Us</a> if you continue having issues.</li>
+      </ul>
+
+      <p>Still need help? <a href="/contact.html">Contact us</a> and we'll be happy to assist.</p>
+    </section>
+
+    <footer class="page-footer">
+      &copy; 2026 Code Pybricks. All rights reserved.
+    </footer>
+
+  </div>
+</body>
+</html>

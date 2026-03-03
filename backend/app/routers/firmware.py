@@ -68,10 +68,6 @@ def _contains_c_main(source: str) -> bool:
     return re.search(r"\b(?:int|void)\s+main\s*\(", source) is not None
 
 
-def _contains_spike_rt_main_task(source: str) -> bool:
-    return re.search(r"\bvoid\s+main_task\s*\(", source) is not None
-
-
 def _looks_like_top_level_c(source: str) -> bool:
     if "#include" in source:
         return True
@@ -86,22 +82,17 @@ def _default_firmware_scaffold(user_source: str) -> str:
     user_block = _build_user_block(normalized)
 
     return (
-        "#include <kernel.h>\n"
-        "#include \"button.h\"\n"
-        "#include \"spike/hub/speaker.h\"\n"
-        "#include \"spike/pup/motor.h\"\n\n"
+        "#include <stdint.h>\n"
+        "#include <stdbool.h>\n\n"
         "int code_pybricks_user_main(void) __attribute__((weak));\n\n"
         f"{C_USER_CODE_BEGIN_MARKER}\n"
         f"{user_block}\n"
         f"{C_USER_CODE_END_MARKER}\n\n"
-        "void main_task(intptr_t exinf) {\n"
-        "    (void)exinf;\n"
+        "int main(void) {\n"
         "    if (code_pybricks_user_main) {\n"
-        "        code_pybricks_user_main();\n"
+        "        return code_pybricks_user_main();\n"
         "    }\n"
-        "    while (1) {\n"
-        "        dly_tsk(1000000);\n"
-        "    }\n"
+        "    return 0;\n"
         "}\n"
     )
 
@@ -121,7 +112,7 @@ def _build_user_block(normalized_user_source: str) -> str:
 
 def _merge_firmware_source(existing_source: str | None, user_source: str) -> str:
     normalized = user_source.strip("\n")
-    if _contains_c_main(normalized) or _contains_spike_rt_main_task(normalized):
+    if _contains_c_main(normalized):
         return normalized + "\n"
 
     user_block = _build_user_block(normalized)
@@ -141,16 +132,8 @@ def _merge_firmware_source(existing_source: str | None, user_source: str) -> str
     return _default_firmware_scaffold(normalized)
 
 
-def _get_spike_rt_repo_root() -> str:
-    explicit_spike_rt = os.getenv("SPIKE_RT_REPO_ROOT", "").strip()
-    if explicit_spike_rt:
-        return explicit_spike_rt
-
-    legacy = os.getenv("PYBRICKS_REPO_ROOT", "").strip()
-    if legacy:
-        return legacy
-
-    return "/home/thanh/Documents/spike-rt"
+def _get_pybricks_repo_root() -> str:
+    return os.getenv("PYBRICKS_REPO_ROOT", "/home/thanh/Documents/pybricks-micropython")
 
 
 def _run_command_template(
@@ -307,12 +290,12 @@ async def build_and_flash_c_firmware(request: CFirmwareBuildFlashRequest):
     - {repo_root}
     - {source_path}
     """
-    repo_root = _get_spike_rt_repo_root()
+    repo_root = _get_pybricks_repo_root()
 
     source_path_value = (
         request.source_path
         or os.getenv("PYBRICKS_C_FIRMWARE_SOURCE_PATH", "")
-        or f"{repo_root}/sample/button/button.c"
+        or f"{repo_root}/c/examples/firmware_user_script_example.c"
     )
     source_path = Path(source_path_value)
     if not source_path.is_absolute():
@@ -330,12 +313,12 @@ async def build_and_flash_c_firmware(request: CFirmwareBuildFlashRequest):
     build_template = (
         request.build_command
         or os.getenv("PYBRICKS_C_FIRMWARE_BUILD_CMD", "")
-        or "docker run --rm -v {repo_root}:/work -w /work ghcr.io/spike-rt/spike-rt:rich /bin/bash -lc \"set -e; git config --global --add safe.directory '*' ; ./scripts/build-samples.sh\""
+        or "make -C {repo_root}/c primehub-build"
     )
     flash_template = (
         request.flash_command
         or os.getenv("PYBRICKS_C_FIRMWARE_FLASH_CMD", "")
-        or "bash -lc \"cd {repo_root}/build/obj-primehub_button && PYTHON3={repo_root}/tools/python/bin/python3 {repo_root}/scripts/deploy-dfu.sh asp.bin\""
+        or "make -C {repo_root}/c primehub-deploy PYBRICKSDEV='{pybricksdev_cmd}'"
     )
 
     try:
@@ -351,22 +334,6 @@ async def build_and_flash_c_firmware(request: CFirmwareBuildFlashRequest):
         )
     except HTTPException as exc:
         detail = str(exc.detail)
-        if (
-            "sudo" in detail
-            and (
-                "password" in detail
-                or "a terminal is required" in detail
-                or "a password is required" in detail
-            )
-        ):
-            raise HTTPException(
-                status_code=500,
-                detail=(
-                    "Firmware deploy needs sudo access for DFU flash. "
-                    "Configure passwordless sudo for this command path, or flash manually from a terminal with: "
-                    f"cd {repo_root}/build/obj-primehub_button && PYTHON3={repo_root}/tools/python/bin/python3 sudo {repo_root}/scripts/deploy-dfu.sh asp.bin"
-                ),
-            )
         if "pybricksdev: No such file or directory" in detail:
             raise HTTPException(
                 status_code=501,
@@ -375,11 +342,7 @@ async def build_and_flash_c_firmware(request: CFirmwareBuildFlashRequest):
                     "Install it in the backend environment with: pip install pybricksdev"
                 ),
             )
-        if (
-            "No DFU devices found" in detail
-            or "No DFU device found" in detail
-            or "No LEGO DFU USB device found" in detail
-        ):
+        if "No DFU devices found" in detail or "No LEGO DFU USB device found" in detail:
             raise HTTPException(
                 status_code=400,
                 detail=(
@@ -398,8 +361,8 @@ async def build_and_flash_c_firmware(request: CFirmwareBuildFlashRequest):
     return CFirmwareBuildFlashResponse(
         success=True,
         message=(
-            f"Built and flashed SPIKE-RT button firmware using source: {filename}. "
-            "Editor code was injected into sample/button/button.c and executed from main_task."
+            f"Built and flashed C firmware using source: {filename}. "
+            "Generated source includes full scaffold; editor code was injected into user section."
         ),
         source_path=str(source_path),
         build_command=build_command,

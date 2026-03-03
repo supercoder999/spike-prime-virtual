@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import Editor, { OnMount, OnChange } from '@monaco-editor/react';
 import { useStore, Program } from '../store/useStore';
+import { FREE_LINE_LIMIT, countLines } from '../services/activationLimit';
 
 // Pybricks MicroPython autocomplete suggestions
 const PYBRICKS_COMPLETIONS = [
@@ -56,7 +57,7 @@ const PYBRICKS_COMPLETIONS = [
 ];
 
 const PythonEditor: React.FC = () => {
-  const { pythonCode, setPythonCode, darkMode, currentProgramId, updateProgram } = useStore();
+  const { pythonCode, setPythonCode, darkMode, currentProgramId, updateProgram, isActivated, activationExpiry, setActivated, setShowActivationModal } = useStore();
   const editorRef = useRef<any>(null);
   const lastPasteTimeRef = useRef<number>(0);
 
@@ -152,6 +153,12 @@ const PythonEditor: React.FC = () => {
   const handleChange: OnChange = useCallback(
     (value) => {
       if (value !== undefined) {
+        const isExpired = activationExpiry ? new Date(activationExpiry + 'T23:59:59') < new Date() : false;
+        if ((!isActivated || isExpired) && countLines(value) > FREE_LINE_LIMIT) {
+          if (isExpired) setActivated(false);
+          setShowActivationModal(true);
+          return;
+        }
         setPythonCode(value);
         // Also sync back to the current program in the file list
         if (currentProgramId) {
@@ -159,7 +166,7 @@ const PythonEditor: React.FC = () => {
         }
       }
     },
-    [setPythonCode, currentProgramId, updateProgram]
+    [setPythonCode, currentProgramId, updateProgram, isActivated, activationExpiry, setActivated, setShowActivationModal]
   );
 
   return (

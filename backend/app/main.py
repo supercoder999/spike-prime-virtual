@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-from .routers import programs, compiler, examples, docs as docs_router, ai as ai_router, firmware as firmware_router, c_api as c_api_router
+from .routers import programs, compiler, examples, docs as docs_router, ai as ai_router, firmware as firmware_router, c_api as c_api_router, activation as activation_router, contact as contact_router
 from .websocket import connection_manager
 
 # Load backend/.env automatically (works even when uvicorn is started without --env-file)
@@ -44,7 +44,8 @@ app.include_router(examples.router, prefix="/api/examples", tags=["Examples"])
 app.include_router(docs_router.router, prefix="/api/docs", tags=["Documentation"])
 app.include_router(ai_router.router, prefix="/api/ai", tags=["AI Assistant"])
 app.include_router(firmware_router.router, prefix="/api/firmware", tags=["Firmware"])
-app.include_router(c_api_router.router, prefix="/api/c-api", tags=["C API"])
+app.include_router(c_api_router.router, prefix="/api/c-api", tags=["C API"])\napp.include_router(activation_router.router, prefix="/api/activation", tags=["Activation"])
+app.include_router(contact_router.router, prefix="/api/contact", tags=["Contact"])
 
 
 @app.get("/")
