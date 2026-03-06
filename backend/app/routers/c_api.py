@@ -12,7 +12,9 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
-DEFAULT_INCLUDE_DIR = "/home/thanh/Documents/pybricks-micropython/c/include"
+# In Docker: /app/c_include; locally: fallback to env var or sibling dir
+_APP_DIR = Path(__file__).resolve().parent.parent.parent  # backend/
+DEFAULT_INCLUDE_DIR = str(_APP_DIR / "c_include")
 
 
 class CApiSymbol(BaseModel):

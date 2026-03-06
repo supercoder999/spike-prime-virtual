@@ -1,4 +1,4 @@
-"""Program management API - CRUD operations for Python programs."""
+"""Program management API - CRUD operations for Python programs (Firestore)."""
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -6,10 +6,11 @@ from typing import Optional, List
 from datetime import datetime
 import uuid
 
+from ..firestore import get_db
+
 router = APIRouter()
 
-# In-memory storage (replace with database in production)
-programs_db: dict[str, dict] = {}
+COLLECTION = "programs"
 
 
 class ProgramCreate(BaseModel):
@@ -39,20 +40,26 @@ class ProgramResponse(BaseModel):
 @router.get("/", response_model=List[ProgramResponse])
 async def list_programs():
     """List all saved programs."""
-    return list(programs_db.values())
+    db = get_db()
+    docs = db.collection(COLLECTION).order_by("created_at").stream()
+    programs = [doc.to_dict() async for doc in docs]
+    return programs
 
 
 @router.get("/{program_id}", response_model=ProgramResponse)
 async def get_program(program_id: str):
     """Get a specific program by ID."""
-    if program_id not in programs_db:
+    db = get_db()
+    doc = await db.collection(COLLECTION).document(program_id).get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="Program not found")
-    return programs_db[program_id]
+    return doc.to_dict()
 
 
 @router.post("/", response_model=ProgramResponse, status_code=201)
 async def create_program(program: ProgramCreate):
     """Create a new program."""
+    db = get_db()
     program_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
     program_data = {
@@ -64,28 +71,34 @@ async def create_program(program: ProgramCreate):
         "created_at": now,
         "updated_at": now,
     }
-    programs_db[program_id] = program_data
+    await db.collection(COLLECTION).document(program_id).set(program_data)
     return program_data
 
 
 @router.put("/{program_id}", response_model=ProgramResponse)
 async def update_program(program_id: str, program: ProgramUpdate):
     """Update an existing program."""
-    if program_id not in programs_db:
+    db = get_db()
+    doc_ref = db.collection(COLLECTION).document(program_id)
+    doc = await doc_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="Program not found")
 
-    existing = programs_db[program_id]
     update_data = program.model_dump(exclude_unset=True)
-    existing.update(update_data)
-    existing["updated_at"] = datetime.utcnow().isoformat()
-    programs_db[program_id] = existing
-    return existing
+    update_data["updated_at"] = datetime.utcnow().isoformat()
+    await doc_ref.update(update_data)
+
+    updated_doc = await doc_ref.get()
+    return updated_doc.to_dict()
 
 
 @router.delete("/{program_id}")
 async def delete_program(program_id: str):
     """Delete a program."""
-    if program_id not in programs_db:
+    db = get_db()
+    doc_ref = db.collection(COLLECTION).document(program_id)
+    doc = await doc_ref.get()
+    if not doc.exists:
         raise HTTPException(status_code=404, detail="Program not found")
-    del programs_db[program_id]
+    await doc_ref.delete()
     return {"message": "Program deleted"}

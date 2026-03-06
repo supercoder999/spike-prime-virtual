@@ -28,7 +28,7 @@ class ContactRequest(BaseModel):
 
 
 async def verify_recaptcha(token: str) -> bool:
-    """Verify a reCAPTCHA token with Google's API."""
+    """Verify a reCAPTCHA v3 token with Google's API. Returns True if score >= 0.5."""
     if not RECAPTCHA_SECRET:
         # If no secret is configured, skip verification (dev mode)
         print("[Contact] RECAPTCHA_SECRET not set — skipping verification.")
@@ -40,7 +40,11 @@ async def verify_recaptcha(token: str) -> bool:
                 data={"secret": RECAPTCHA_SECRET, "response": token},
             )
             result = resp.json()
-            return result.get("success", False)
+            success = result.get("success", False)
+            score = result.get("score", 0)
+            action = result.get("action", "")
+            print(f"[Contact] reCAPTCHA v3: success={success}, score={score}, action={action}")
+            return success and score >= 0.5
     except Exception as e:
         print(f"[Contact] reCAPTCHA verification error: {e}")
         return False
@@ -59,7 +63,7 @@ async def submit_contact(req: ContactRequest):
     if not await verify_recaptcha(req.recaptcha_token):
         raise HTTPException(status_code=403, detail="reCAPTCHA verification failed. Please try again.")
 
-    subject = f"[Code Pybricks Contact] {req.topic}"
+    subject = f"[Spike Prime Virtual Contact] {req.topic}"
     body = (
         f"Topic: {req.topic}\n"
         f"From: {req.email}\n"

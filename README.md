@@ -17,7 +17,7 @@ Inspired by [code.pybricks.com](https://code.pybricks.com/) ([pybricks-code](htt
 ## Architecture
 
 ```
-code_pybricks/
+spike-prime-virtual/
 ├── frontend/          # React + TypeScript + Vite
 │   ├── src/
 │   │   ├── components/    # React components (Toolbar, Editors, Terminal, etc.)

@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:8000/api/c-api';
+import { API_BASE_URL } from './config';
+
+const API_BASE = `${API_BASE_URL}/api/c-api`;
 
 export interface CApiSymbol {
   name: string;

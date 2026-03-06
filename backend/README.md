@@ -12,6 +12,37 @@ pip install -r requirements.txt
 
 This installs `pybricksdev`, used by the firmware endpoint to flash Pybricks firmware.
 
+## Database – Google Cloud Firestore
+
+The backend uses **Firestore** for persistent storage (programs collection).
+
+### Local development (Firebase Emulator)
+
+1. Install the Firebase CLI (one-time):
+   ```bash
+   npm install -g firebase-tools
+   ```
+2. Start the Firestore emulator from the **project root**:
+   ```bash
+   firebase emulators:start --only firestore
+   ```
+   The emulator UI is available at http://localhost:4000.
+3. Make sure `backend/.env` contains:
+   ```env
+   FIRESTORE_EMULATOR_HOST=localhost:8080
+   GCP_PROJECT_ID=code-pybricks-local
+   ```
+
+### Production (Google Cloud)
+
+1. Create a Firestore database in your GCP project.
+2. Download a service-account key JSON, then set in `backend/.env`:
+   ```env
+   # Remove or comment out FIRESTORE_EMULATOR_HOST
+   GCP_PROJECT_ID=your-gcp-project-id
+   GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+   ```
+
 ## Run
 
 ```bash

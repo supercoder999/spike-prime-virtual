@@ -29,7 +29,9 @@ export interface CFirmwareBuildFlashResponse {
   flash_output: string;
 }
 
-const API_BASE = 'http://localhost:8000/api/firmware';
+import { API_BASE_URL } from './config';
+
+const API_BASE = `${API_BASE_URL}/api/firmware`;
 
 async function getErrorMessage(response: Response): Promise<string> {
   const text = await response.text();

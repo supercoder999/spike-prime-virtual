@@ -4,7 +4,9 @@
  * Supports Anthropic Claude (paid) and Google Gemini (free tier).
  */
 
-const API_BASE = 'http://localhost:8000/api/ai';
+import { API_BASE_URL } from './config';
+
+const API_BASE = `${API_BASE_URL}/api/ai`;
 
 export interface ChatMessage {
   role: 'user' | 'assistant';

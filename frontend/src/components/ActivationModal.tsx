@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
+import { API_BASE_URL } from '../services/config';
 
 const FREE_LINE_LIMIT = 30;
 
@@ -11,16 +12,30 @@ const FREE_LINE_LIMIT = 30;
  * For sandbox testing use sandbox plan IDs with the sandbox URL.
  * Switch PAYPAL_BASE to "https://www.paypal.com" for production.
  */
-const PAYPAL_BASE = 'https://www.sandbox.paypal.com'; // TODO: change to https://www.paypal.com for production
+const PAYPAL_BASE = import.meta.env.VITE_PAYPAL_MODE === 'sandbox' 
+  ? 'https://www.sandbox.paypal.com' 
+  : 'https://www.paypal.com';
 
 const PRICING_PLANS = [
+  {
+    id: '20min',
+    label: '20 Minutes',
+    price: '$2',
+    period: '/one-time',
+    savings: 'Trial',
+    planId: import.meta.env.VITE_PAYPAL_MODE === 'sandbox' 
+      ? 'P-1N881337FX8951608NGVF3JI' 
+      : 'P-3298108474070713UNGVGFBQ',
+  },
   {
     id: '1month',
     label: '1 Month',
     price: '$20',
     period: '/month',
     savings: '',
-    planId: 'P-REPLACE_1MONTH_PLAN_ID',   // TODO: replace with real PayPal Subscription Plan ID
+    planId: import.meta.env.VITE_PAYPAL_MODE === 'sandbox' 
+      ? 'P-8K4378055C637962ANGVEEBY' 
+      : 'PASTE_YOUR_LIVE_1_DOLLAR_PLAN_ID_HERE',
   },
   {
     id: '6months',
@@ -28,7 +43,9 @@ const PRICING_PLANS = [
     price: '$100',
     period: '/6 months',
     savings: 'Save 17%',
-    planId: 'P-REPLACE_6MONTH_PLAN_ID',   // TODO: replace with real PayPal Subscription Plan ID
+    planId: import.meta.env.VITE_PAYPAL_MODE === 'sandbox' 
+      ? 'PASTE_SANDBOX_ID_2_HERE' 
+      : 'P-1A0527784T027311WNGUG4KQ',
   },
   {
     id: '12months',
@@ -36,7 +53,9 @@ const PRICING_PLANS = [
     price: '$180',
     period: '/year',
     savings: 'Save 25%',
-    planId: 'P-REPLACE_12MONTH_PLAN_ID',  // TODO: replace with real PayPal Subscription Plan ID
+    planId: import.meta.env.VITE_PAYPAL_MODE === 'sandbox' 
+      ? 'PASTE_SANDBOX_ID_3_HERE' 
+      : 'P-7H139700RF500774FNGUG4TQ',
   },
 ] as const;
 
@@ -50,7 +69,7 @@ const ActivationModal: React.FC = () => {
 
   const handleSubmit = useCallback(async () => {
     if (!email.trim()) {
-      setError('Please enter the email you used for payment.');
+      setError('Please enter your email address.');
       return;
     }
     if (!code.trim()) {
@@ -60,7 +79,7 @@ const ActivationModal: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/activation/validate', {
+      const res = await fetch(`${API_BASE_URL}/api/activation/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), code: code.trim() }),
@@ -103,13 +122,13 @@ const ActivationModal: React.FC = () => {
               You've reached the free limit of <strong>{FREE_LINE_LIMIT} lines</strong> (or{' '}
               <strong>{FREE_LINE_LIMIT} blocks</strong>).
               Purchase a subscription to unlock unlimited usage. After payment, an activation
-              code will be sent to your PayPal email automatically.
+              code will be sent to your email automatically.
             </p>
 
             <input
               className="activation-input"
               type="email"
-              placeholder="PayPal email address"
+              placeholder="Your email address"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(''); }}
               onKeyDown={handleKeyDown}
@@ -143,7 +162,7 @@ const ActivationModal: React.FC = () => {
                 View Pricing &amp; Subscribe
               </button>
               <span className="activation-link-hint">
-                Code is emailed automatically after payment
+                Activation code is emailed after payment
               </span>
               <a href="/terms.html" target="_blank" rel="noopener noreferrer">
                 Terms of Service
@@ -180,7 +199,7 @@ const ActivationModal: React.FC = () => {
             </div>
 
             <span className="activation-link-hint" style={{ marginTop: '10px', display: 'block' }}>
-              After subscribing, an activation code will be emailed to your PayPal address.
+              After subscribing, an activation code will be emailed to you.
               Return here and enter it above to activate.
             </span>
 

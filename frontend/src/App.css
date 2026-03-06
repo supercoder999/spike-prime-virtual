@@ -620,8 +620,8 @@ html, body, #root {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 2rem 2.5rem;
-  max-width: 440px;
-  width: 90%;
+  max-width: 680px;
+  width: 95%;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   color: var(--text-primary);
 }
@@ -738,22 +738,28 @@ html, body, #root {
 
 /* ── Pricing Cards ── */
 .pricing-cards {
-  display: flex;
-  gap: 10px;
-  margin: 12px 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
 }
 
 .pricing-card {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 14px 10px;
+  gap: 8px;
+  padding: 16px 12px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--bg-primary);
   position: relative;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.pricing-card:hover {
+  border-color: var(--pybricks-blue);
+  transform: translateY(-2px);
 }
 
 .pricing-card--best {
@@ -1106,6 +1112,24 @@ html, body, #root {
 .ai-quick-btn:hover {
   border-color: var(--pybricks-blue);
   background: var(--bg-hover);
+}
+
+/* Locked (non-subscriber) quick-prompt buttons */
+.ai-quick-btn-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.ai-quick-btn-locked:hover {
+  border-color: var(--border-color);
+  background: var(--bg-primary);
+  opacity: 0.55;
+}
+
+.ai-lock-icon {
+  font-size: 10px;
+  margin-right: 3px;
 }
 
 /* Message bubbles */

@@ -12,9 +12,13 @@ from dotenv import load_dotenv
 
 from .routers import programs, compiler, examples, docs as docs_router, ai as ai_router, firmware as firmware_router, c_api as c_api_router, activation as activation_router, contact as contact_router
 from .websocket import connection_manager
+from .firestore import init_firestore
 
 # Load backend/.env automatically (works even when uvicorn is started without --env-file)
 load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
+
+# Initialise Firestore client (connects to emulator if FIRESTORE_EMULATOR_HOST is set)
+init_firestore()
 
 app = FastAPI(
     title="Code LEGO Spike Python Portal API",
@@ -22,15 +26,24 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS - allow frontend dev server
+# CORS - allow frontend dev server & production
+_cors_origins = [
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+    "https://spikeprimevirtual.com",
+    "https://www.spikeprimevirtual.com",
+    "https://spikeprime-frontend-902850923189.us-central1.run.app",
+]
+# Allow extra origins via env var (comma-separated)
+_extra = os.getenv("CORS_ORIGINS", "")
+if _extra:
+    _cors_origins.extend([o.strip() for o in _extra.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,7 +57,8 @@ app.include_router(examples.router, prefix="/api/examples", tags=["Examples"])
 app.include_router(docs_router.router, prefix="/api/docs", tags=["Documentation"])
 app.include_router(ai_router.router, prefix="/api/ai", tags=["AI Assistant"])
 app.include_router(firmware_router.router, prefix="/api/firmware", tags=["Firmware"])
-app.include_router(c_api_router.router, prefix="/api/c-api", tags=["C API"])\napp.include_router(activation_router.router, prefix="/api/activation", tags=["Activation"])
+app.include_router(c_api_router.router, prefix="/api/c-api", tags=["C API"])
+app.include_router(activation_router.router, prefix="/api/activation", tags=["Activation"])
 app.include_router(contact_router.router, prefix="/api/contact", tags=["Contact"])
 
 

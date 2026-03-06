@@ -9,7 +9,7 @@ Build SPIKE-RT firmware and export the latest flashable .bin into backend/firmwa
 
 Options:
   -t, --target <name>        Sample target name (default: all_motors_360)
-  -s, --spike-root <path>    Path to spike-rt repo (default: ../spike-rt from code_pybricks)
+  -s, --spike-root <path>    Path to spike-rt repo (default: ../spike-rt from spike-prime-virtual)
   -o, --output-dir <path>    Output directory (default: backend/firmware)
       --skip-build           Skip build and only export existing asp.bin
   -h, --help                 Show this help
@@ -58,10 +58,10 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-CODE_PYBRICKS_DIR="$(cd "$BACKEND_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$BACKEND_DIR/.." && pwd)"
 
 if [[ -z "$SPIKE_ROOT" ]]; then
-  SPIKE_ROOT="$(cd "$CODE_PYBRICKS_DIR/../spike-rt" && pwd)"
+  SPIKE_ROOT="$(cd "$PROJECT_ROOT/../spike-rt" && pwd)"
 else
   SPIKE_ROOT="$(cd "$SPIKE_ROOT" && pwd)"
 fi

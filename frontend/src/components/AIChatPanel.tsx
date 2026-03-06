@@ -23,14 +23,14 @@ import {
 
 /** Quick prompt suggestions */
 const QUICK_PROMPTS = [
-  { label: '🚗 Drive forward', prompt: 'Write code to make the robot drive forward 500mm using a DriveBase on ports A and B' },
-  { label: '🎨 Line follow', prompt: 'Write a PID line follower using a color sensor on port C' },
-  { label: '🔊 Play sound', prompt: 'Write code to play different beep tones on the hub speaker' },
-  { label: '📐 Turn 90°', prompt: 'Write code to make the robot turn exactly 90 degrees using the gyro' },
-  { label: '🖥️ Display text', prompt: 'Write code to scroll text on the hub 5x5 display' },
-  { label: '🔍 Read sensor', prompt: 'Write code to read and print color sensor values in a loop' },
-  { label: '💡 Explain code', prompt: 'Explain what my current code does step by step' },
-  { label: '🐛 Fix errors', prompt: 'Check my current code for errors and suggest fixes' },
+  { label: '🚗 Drive forward', prompt: 'Write code to make the robot drive forward 500mm using a DriveBase on ports A and B', free: false },
+  { label: '🎨 Line follow', prompt: 'Write a PID line follower using a color sensor on port C', free: false },
+  { label: '🔊 Play sound', prompt: 'Write code to play different beep tones on the hub speaker', free: false },
+  { label: '📐 Turn 90°', prompt: 'Write code to make the robot turn exactly 90 degrees using the gyro', free: false },
+  { label: '🖥️ Display text', prompt: 'Write code to scroll text on the hub 5x5 display', free: false },
+  { label: '🔍 Read sensor', prompt: 'Write code to read and print color sensor values in a loop', free: false },
+  { label: '💡 Explain code', prompt: 'Explain what my current code does step by step', free: true },
+  { label: '🐛 Fix errors', prompt: 'Check my current code for errors and suggest fixes', free: false },
 ];
 
 /**
@@ -416,15 +416,29 @@ const AIChatPanel: React.FC = () => {
               <div className="ai-quick-prompts">
                 <p className="ai-quick-label">Quick prompts:</p>
                 <div className="ai-quick-grid">
-                  {QUICK_PROMPTS.map((qp, i) => (
-                    <button
-                      key={i}
-                      className="ai-quick-btn"
-                      onClick={() => handleSend(qp.prompt)}
-                    >
-                      {qp.label}
-                    </button>
-                  ))}
+                  {QUICK_PROMPTS.map((qp, i) => {
+                    const isExpired = activationExpiry ? new Date(activationExpiry + 'T23:59:59') < new Date() : false;
+                    const needsActivation = !isActivated || isExpired;
+                    const locked = needsActivation && !qp.free;
+                    return (
+                      <button
+                        key={i}
+                        className={`ai-quick-btn${locked ? ' ai-quick-btn-locked' : ''}`}
+                        onClick={() => {
+                          if (locked) {
+                            if (isExpired) setActivated(false);
+                            setShowActivationModal(true);
+                          } else {
+                            handleSend(qp.prompt);
+                          }
+                        }}
+                        title={locked ? 'Subscribe to unlock this feature' : qp.prompt}
+                      >
+                        {locked && <span className="ai-lock-icon">🔒</span>}
+                        {qp.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -468,8 +482,8 @@ const AIChatPanel: React.FC = () => {
             return (
               <div className="ai-subscribe-overlay">
                 <Sparkles size={20} />
-                <p><strong>AI Assistant</strong> is a premium feature.</p>
-                <p>Subscribe to unlock unlimited AI-powered help with your Spike Prime code.</p>
+                <p><strong>Full AI Assistant</strong> is a premium feature.</p>
+                <p>You can use <strong>Explain Code</strong> for free. Subscribe to unlock all AI features including code writing, debugging, and more.</p>
                 <button
                   className="ai-subscribe-btn"
                   onClick={() => {
@@ -477,7 +491,7 @@ const AIChatPanel: React.FC = () => {
                     setShowActivationModal(true);
                   }}
                 >
-                  Subscribe to Unlock
+                  Subscribe to Unlock All
                 </button>
               </div>
             );
@@ -497,7 +511,7 @@ const AIChatPanel: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about Spike Prime coding..."
+            placeholder={(!isActivated || (activationExpiry ? new Date(activationExpiry + 'T23:59:59') < new Date() : false)) ? 'Subscribe to type custom prompts...' : 'Ask about Spike Prime coding...'}
             rows={1}
             disabled={isLoading || (!isActivated || (activationExpiry ? new Date(activationExpiry + 'T23:59:59') < new Date() : false))}
           />
