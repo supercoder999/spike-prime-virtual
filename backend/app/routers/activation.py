@@ -44,17 +44,17 @@ router = APIRouter()
 #   5. PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET → from PayPal Developer Dashboard > Apps
 #   6. PAYPAL_MODE → change from "sandbox" to "live"
 #
-ACTIVATION_SECRET = os.getenv("ACTIVATION_SECRET", "change-me-in-production")  # TODO: replace default
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "mygoolet@gmail.com")
+ACTIVATION_SECRET = os.getenv("ACTIVATION_SECRET", "aa24e83f02511ce18711f2352e8623a688561c3f94d66f1cfd9c59b69500e023")  # TODO: replace default
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "support@craftbots.ai")
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")   # TODO: set for production
-SMTP_PASS = os.getenv("SMTP_PASS", "")   # TODO: set for production
-PAYPAL_WEBHOOK_ID = os.getenv("PAYPAL_WEBHOOK_ID", "")        # TODO: set for production
-PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", "")          # TODO: set for production
-PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET", "")  # TODO: set for production
+SMTP_USER = os.getenv("SMTP_USER", "support@craftbots.ai")   # TODO: set for production
+SMTP_PASS = os.getenv("SMTP_PASS", "vcmo nrvv gzey zxzt")   # TODO: set for production
+PAYPAL_WEBHOOK_ID = os.getenv("PAYPAL_WEBHOOK_ID", "7WC277198H480111T")        # TODO: set for production
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", "AZMHcchR2TVZfYe5ul1twS3_rX_zOecXucV792UUyQxZZ8oZpZE9Ng3gdff7iqloy6TkwdjuohYMfb2r")          # TODO: set for production
+PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET", "ENfaLNPFEjHKer01rSsB_msdwYF2E191DEBxDMokasYyygvWcUqxpLuFORbVmVnbDyVaCp0Gudl1fhfZ")  # TODO: set for production
 # TODO: change to "live" for production
-PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox")
+PAYPAL_MODE = os.getenv("PAYPAL_MODE", "live")
 
 # Map PayPal amounts to plan labels (must match pricing in frontend)
 AMOUNT_TO_PLAN: dict[str, str] = {
@@ -68,9 +68,17 @@ AMOUNT_TO_PLAN: dict[str, str] = {
 # Plan labels → number of units (months unless handled specially)
 PLAN_LABEL_TO_MONTHS: dict[str, int] = {
     "1 Month (Test)": 1,
+    "20 Minutes": 0,  # special: 20 min
     "1 Month": 1,
     "6 Months": 6,
     "12 Months": 12,
+}
+
+# PayPal plan IDs → plan labels (for claim endpoint)
+PAYPAL_PLAN_IDS: dict[str, str] = {
+    "P-3298108474070713UNGVGFBQ": "20 Minutes",
+    "P-1A0527784T027311WNGUG4KQ": "6 Months",
+    "P-7H139700RF500774FNGUG4TQ": "12 Months",
 }
 
 
@@ -162,7 +170,18 @@ async def _verify_code(code: str) -> tuple[bool, str]:
     expiry_str = data.get("expiry", "")
 
     try:
-        expiry_date = date.fromisoformat(expiry_str)
+        # Handle both date ("2026-09-30") and datetime ("2026-03-06T16:55:12+00:00") formats
+        if "T" in expiry_str:
+            expiry_dt = datetime.fromisoformat(expiry_str.replace("Z", "+00:00"))
+            now_utc = datetime.now(timezone.utc)
+            if now_utc > expiry_dt:
+                return False, (
+                    f"This activation code expired on {expiry_dt.strftime('%B %d, %Y at %H:%M UTC')}. "
+                    "Please renew your subscription to receive a new code."
+                )
+            return True, expiry_str
+        else:
+            expiry_date = date.fromisoformat(expiry_str)
     except Exception:
         return False, "Invalid code data."
 
@@ -571,16 +590,213 @@ class AdminGenerateRequest(BaseModel):
     secret: str          # must match ACTIVATION_SECRET
     buyer_email: str     # for reference
     months: int = 12
+    send_email: bool = True  # send activation email to buyer
 
 
 @router.post("/admin/generate")
 async def admin_generate_code(body: AdminGenerateRequest):
-    """Admin-only endpoint to manually create an activation code."""
+    """Admin-only endpoint to manually create an activation code and optionally email it."""
     if body.secret != ACTIVATION_SECRET:
         raise HTTPException(status_code=403, detail="Forbidden.")
 
-    code, expiry = await _generate_code(body.buyer_email, body.months)
-    return {"code": code, "expiry": expiry, "buyer_email": body.buyer_email, "months": body.months}
+    plan_label = PLAN_LABEL_TO_MONTHS.get(str(body.months), f"{body.months} Month{'s' if body.months != 1 else ''}")
+    # Reverse-lookup a nice plan label, or build one
+    plan_duration = next(
+        (k for k, v in PLAN_LABEL_TO_MONTHS.items() if v == body.months),
+        f"{body.months} Month{'s' if body.months != 1 else ''}",
+    )
+
+    code, expiry = await _generate_code(body.buyer_email, body.months, plan_duration=plan_duration)
+    payment_date = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
+
+    if body.send_email:
+        _send_activation_email(
+            buyer_email=body.buyer_email,
+            code=code,
+            plan_duration=plan_duration,
+            payment_date=payment_date,
+            expiry_date=expiry,
+        )
+
+    return {"code": code, "expiry": expiry, "buyer_email": body.buyer_email, "months": body.months, "email_sent": body.send_email}
+
+
+# ── Claim activation code (after PayPal payment) ────────────────────
+class ClaimRequest(BaseModel):
+    email: str
+    subscription_id: str = ""  # optional — PayPal subscription ID (e.g. I-XXXX)
+
+
+@router.post("/claim")
+async def claim_activation_code(body: ClaimRequest):
+    """After a user completes a PayPal subscription, verify it and send activation code.
+
+    If subscription_id is provided, the backend verifies that specific subscription.
+    If only email is provided, the backend checks Firestore for any pending codes.
+    """
+    email = body.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    sub_id = body.subscription_id.strip().upper()
+
+    # If no subscription ID provided, check Firestore for existing unclaimed codes
+    if not sub_id:
+        db = get_db()
+        # Check if there are any codes already generated for this email
+        existing = db.collection("activation_codes").where("buyer_email", "==", email)
+        docs = [d async for d in existing.stream()]
+        if docs:
+            # Find codes that haven't expired
+            today = date.today()
+            active_codes = []
+            for doc in docs:
+                data = doc.to_dict()
+                try:
+                    expiry = date.fromisoformat(data.get("expiry", "2000-01-01")[:10])
+                    if expiry >= today:
+                        active_codes.append(data)
+                except Exception:
+                    pass
+            if active_codes:
+                # Resend the most recent active code
+                latest = sorted(active_codes, key=lambda x: x.get("created_at", ""), reverse=True)[0]
+                _send_activation_email(
+                    buyer_email=email,
+                    code=latest["code"],
+                    plan_duration=latest.get("plan", ""),
+                    payment_date="",
+                    expiry_date=latest.get("expiry", ""),
+                )
+                return {
+                    "status": "ok",
+                    "message": f"Your activation code has been re-sent to {email}. Check your inbox!",
+                }
+
+        raise HTTPException(
+            status_code=404,
+            detail="No subscription ID provided and no existing codes found. Please enter your PayPal subscription ID (starts with I-) or contact support.",
+        )
+
+    # ── Verify the specific subscription with PayPal ──
+    token = await _get_paypal_access_token()
+    if not token:
+        raise HTTPException(status_code=502, detail="Could not connect to PayPal. Please try again.")
+
+    base = "https://api-m.sandbox.paypal.com" if PAYPAL_MODE == "sandbox" else "https://api-m.paypal.com"
+    db = get_db()
+
+    # Check if we already issued a code for this subscription
+    existing = db.collection("activation_codes").where("subscription_id", "==", sub_id)
+    docs = [d async for d in existing.stream()]
+    if docs:
+        # Already claimed — resend the email
+        data = docs[0].to_dict()
+        _send_activation_email(
+            buyer_email=email,
+            code=data["code"],
+            plan_duration=data.get("plan", ""),
+            payment_date="",
+            expiry_date=data.get("expiry", ""),
+        )
+        return {
+            "status": "ok",
+            "message": f"Your activation code has been re-sent to {email}. Check your inbox!",
+        }
+
+    # Fetch subscription details from PayPal
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.get(
+                f"{base}/v1/billing/subscriptions/{sub_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if resp.status_code != 200:
+                print(f"[Claim] PayPal returned {resp.status_code} for subscription {sub_id}")
+                raise HTTPException(
+                    status_code=404,
+                    detail="Subscription not found. Please check your subscription ID and try again.",
+                )
+            sub_detail = resp.json()
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[Claim] Error fetching subscription {sub_id}: {e}")
+            raise HTTPException(status_code=502, detail="Could not verify subscription. Please try again.")
+
+    # Verify subscriber email matches
+    sub_email = sub_detail.get("subscriber", {}).get("email_address", "").strip().lower()
+    if sub_email != email:
+        print(f"[Claim] Email mismatch: {sub_email} != {email} for subscription {sub_id}")
+        raise HTTPException(
+            status_code=403,
+            detail="The email you entered does not match the PayPal subscriber email.",
+        )
+
+    # Verify payment was completed
+    billing = sub_detail.get("billing_info", {})
+    last_payment = billing.get("last_payment", {})
+    if not last_payment:
+        raise HTTPException(
+            status_code=400,
+            detail="No payment found for this subscription. Payment may still be processing.",
+        )
+
+    # Determine plan from plan_id or amount
+    plan_id = sub_detail.get("plan_id", "")
+    plan_label = PAYPAL_PLAN_IDS.get(plan_id, "Unknown")
+    if plan_label == "Unknown":
+        # Try to detect from payment amount
+        amount = last_payment.get("amount", {}).get("value", "")
+        plan_label = AMOUNT_TO_PLAN.get(amount, "Unknown")
+
+    months = PLAN_LABEL_TO_MONTHS.get(plan_label, 1)
+
+    # Generate code
+    code, expiry = await _generate_code(
+        buyer_email=email,
+        months=months,
+        plan_duration=plan_label,
+    )
+
+    # Store subscription_id to prevent double-claiming
+    doc_ref = db.collection("activation_codes").document(code)
+    await doc_ref.update({"subscription_id": sub_id})
+
+    # Determine payment date
+    payment_time = last_payment.get("time", "")
+    try:
+        dt = datetime.fromisoformat(payment_time.replace("Z", "+00:00"))
+        payment_date = dt.strftime("%B %d, %Y at %H:%M UTC")
+    except Exception:
+        payment_date = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
+
+    # Send emails
+    _send_activation_email(
+        buyer_email=email,
+        code=code,
+        plan_duration=plan_label,
+        payment_date=payment_date,
+        expiry_date=expiry,
+    )
+
+    _send_admin_tracking_email(
+        buyer_email=email,
+        code=code,
+        plan_duration=plan_label,
+        payment_date=payment_date,
+        expiry_date=expiry,
+        event_type="CLAIM_ENDPOINT",
+    )
+
+    print(f"[Claim] Code {code} generated for {email} (sub: {sub_id}, plan: {plan_label})")
+    return {
+        "status": "ok",
+        "message": f"Activation code sent to {email}! Check your inbox.",
+        "code": code,
+        "expiry": expiry,
+        "plan": plan_label,
+    }
 
 
 # ── Dev/test endpoint to preview a code (remove in production) ──────

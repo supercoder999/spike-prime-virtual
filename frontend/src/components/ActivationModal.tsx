@@ -66,6 +66,11 @@ const ActivationModal: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'activate' | 'pricing'>('activate');
+  const [claimEmail, setClaimEmail] = useState('');
+  const [claimSubId, setClaimSubId] = useState('');
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [claimMessage, setClaimMessage] = useState('');
+  const [claimError, setClaimError] = useState('');
 
   const handleSubmit = useCallback(async () => {
     if (!email.trim()) {
@@ -108,6 +113,37 @@ const ActivationModal: React.FC = () => {
     },
     [handleSubmit],
   );
+
+  const handleClaim = useCallback(async () => {
+    if (!claimEmail.trim()) {
+      setClaimError('Please enter the email you used for PayPal.');
+      return;
+    }
+    setClaimLoading(true);
+    setClaimError('');
+    setClaimMessage('');
+    try {
+      const payload: Record<string, string> = { email: claimEmail.trim() };
+      if (claimSubId.trim()) {
+        payload.subscription_id = claimSubId.trim();
+      }
+      const res = await fetch(`${API_BASE_URL}/api/activation/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setClaimMessage(data?.message || 'Activation code sent! Check your email.');
+      } else {
+        setClaimError(data?.detail || 'Could not find a payment for this email.');
+      }
+    } catch {
+      setClaimError('Could not reach server. Please try again.');
+    } finally {
+      setClaimLoading(false);
+    }
+  }, [claimEmail, claimSubId]);
 
   if (!showActivationModal) return null;
 
@@ -198,10 +234,42 @@ const ActivationModal: React.FC = () => {
               ))}
             </div>
 
-            <span className="activation-link-hint" style={{ marginTop: '10px', display: 'block' }}>
-              After subscribing, an activation code will be emailed to you.
-              Return here and enter it above to activate.
-            </span>
+            <div className="claim-section" style={{ marginTop: '20px', padding: '16px', background: '#161b22', borderRadius: '8px', border: '1px solid #30363d' }}>
+              <p style={{ margin: '0 0 10px', fontSize: '14px', color: '#c9d1d9' }}>
+                <strong>Already paid?</strong> Enter your details to receive your activation code:
+              </p>
+              <input
+                className="activation-input"
+                type="email"
+                placeholder="Your PayPal email"
+                value={claimEmail}
+                onChange={(e) => { setClaimEmail(e.target.value); setClaimError(''); setClaimMessage(''); }}
+                style={{ margin: '0 0 8px' }}
+              />
+              <input
+                className="activation-input"
+                type="text"
+                placeholder="Subscription ID (e.g. I-H28V6EYY7BAM) — from PayPal confirmation"
+                value={claimSubId}
+                onChange={(e) => { setClaimSubId(e.target.value); setClaimError(''); setClaimMessage(''); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleClaim(); }}
+                style={{ margin: '0 0 8px' }}
+              />
+              <button
+                className="activation-submit"
+                onClick={handleClaim}
+                disabled={claimLoading}
+                style={{ margin: 0, width: '100%' }}
+              >
+                {claimLoading ? 'Checking...' : 'Get My Activation Code'}
+              </button>
+              <p style={{ color: '#8b949e', fontSize: '12px', margin: '8px 0 0' }}>
+                Find your Subscription ID in PayPal: Settings → Payments → Manage pre-approved payments.
+                Without a Subscription ID, we'll re-send your most recent code.
+              </p>
+              {claimMessage && <p style={{ color: '#3fb950', margin: '8px 0 0', fontSize: '13px' }}>{claimMessage}</p>}
+              {claimError && <p className="activation-error" style={{ margin: '8px 0 0' }}>{claimError}</p>}
+            </div>
 
             <button
               className="activation-back-link"
