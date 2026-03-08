@@ -182,7 +182,7 @@ const Toolbar: React.FC = () => {
 
     if (editorMode === 'python') {
       // Bundle multi-file imports before sending to simulator
-      const { bundled, resolvedModules } = bundlePythonPrograms(
+      const { bundled, resolvedModules, hubMenuInjected } = bundlePythonPrograms(
         pythonCode,
         programs,
         currentProgramId,
@@ -190,6 +190,13 @@ const Toolbar: React.FC = () => {
       if (resolvedModules.length > 0) {
         addTerminalLine({
           text: `Sim: bundled ${resolvedModules.length} module(s): ${resolvedModules.join(', ')}`,
+          type: 'info',
+          timestamp: Date.now(),
+        });
+      }
+      if (hubMenuInjected) {
+        addTerminalLine({
+          text: 'Sim: hub_menu polyfill injected (firmware compatibility)',
           type: 'info',
           timestamp: Date.now(),
         });
@@ -300,7 +307,7 @@ const Toolbar: React.FC = () => {
 
     try {
       // Bundle multi-file imports before sending to hub
-      const { bundled, resolvedModules } = bundlePythonPrograms(
+      const { bundled, resolvedModules, hubMenuInjected } = bundlePythonPrograms(
         pythonCode,
         programs,
         currentProgramId,
@@ -308,6 +315,13 @@ const Toolbar: React.FC = () => {
       if (resolvedModules.length > 0) {
         addTerminalLine({
           text: `Bundled ${resolvedModules.length} module(s): ${resolvedModules.join(', ')}`,
+          type: 'info',
+          timestamp: Date.now(),
+        });
+      }
+      if (hubMenuInjected) {
+        addTerminalLine({
+          text: 'hub_menu polyfill injected (firmware compatibility)',
           type: 'info',
           timestamp: Date.now(),
         });
