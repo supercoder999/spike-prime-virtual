@@ -7,6 +7,7 @@ import {
 } from '../services/firmwareService';
 import { convertBlocklyXmlToSimJs } from '../services/blocklyToSimJs';
 import { bundlePythonPrograms } from '../services/pythonBundler';
+import { compilePythonAndDownload } from '../services/compilerService';
 import {
   Bluetooth,
   BluetoothOff,
@@ -20,6 +21,7 @@ import {
   Code2,
   Puzzle,
   Download,
+  HardDriveDownload,
   Upload,
   Battery,
   BatteryLow,
@@ -337,6 +339,85 @@ const Toolbar: React.FC = () => {
     }
   };
 
+  const handleDownloadToHub = async () => {
+    if (editorMode !== 'python') {
+      addTerminalLine({
+        text: 'Download to Hub supports Python tab only.',
+        type: 'info',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (connectionState !== 'connected') {
+      addTerminalLine({
+        text: 'Not connected to hub. Please connect first to download.',
+        type: 'error',
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    try {
+      // Bundle multi-file imports
+      const { bundled, resolvedModules, hubMenuInjected } = bundlePythonPrograms(
+        pythonCode,
+        programs,
+        currentProgramId,
+      );
+      if (resolvedModules.length > 0) {
+        addTerminalLine({
+          text: `Bundled ${resolvedModules.length} module(s): ${resolvedModules.join(', ')}`,
+          type: 'info',
+          timestamp: Date.now(),
+        });
+      }
+      if (hubMenuInjected) {
+        addTerminalLine({
+          text: 'hub_menu polyfill injected (firmware compatibility)',
+          type: 'info',
+          timestamp: Date.now(),
+        });
+      }
+
+      // Step 1: Compile Python to .mpy bytecode on the server
+      addTerminalLine({
+        text: 'Compiling Python to bytecode...',
+        type: 'info',
+        timestamp: Date.now(),
+      });
+      const mpyData = await compilePythonAndDownload({
+        source_code: bundled,
+        filename: 'main.py',
+      });
+      addTerminalLine({
+        text: `Compiled successfully (${mpyData.length} bytes)`,
+        type: 'info',
+        timestamp: Date.now(),
+      });
+
+      // Step 2: Download bytecode to hub and run
+      addTerminalLine({
+        text: 'Downloading to hub...',
+        type: 'info',
+        timestamp: Date.now(),
+      });
+      await bleService.downloadAndRun(mpyData);
+      addTerminalLine({
+        text: 'Program stored on hub! You can now disconnect and press the hub button to re-run it.',
+        type: 'info',
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      addTerminalLine({
+        text: `Download failed: ${message}`,
+        type: 'error',
+        timestamp: Date.now(),
+      });
+    }
+  };
+
   const handleStop = async () => {
     if (simulationMode) {
       const channel = simBridgeRef.current;
@@ -623,6 +704,16 @@ const Toolbar: React.FC = () => {
         >
           <Square size={18} />
           <span className="toolbar-label">Stop</span>
+        </button>
+
+        <button
+          className="toolbar-btn"
+          onClick={handleDownloadToHub}
+          disabled={connectionState !== 'connected' || editorMode !== 'python' || hubStatus === 'running'}
+          title="Download program to hub (persists after disconnect — press hub button to re-run)"
+        >
+          <HardDriveDownload size={18} />
+          <span className="toolbar-label">Download</span>
         </button>
       </div>
 
