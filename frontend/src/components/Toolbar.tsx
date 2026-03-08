@@ -6,6 +6,7 @@ import {
   restoreBundledLegoFirmware,
 } from '../services/firmwareService';
 import { convertBlocklyXmlToSimJs } from '../services/blocklyToSimJs';
+import { bundlePythonPrograms } from '../services/pythonBundler';
 import {
   Bluetooth,
   BluetoothOff,
@@ -180,9 +181,22 @@ const Toolbar: React.FC = () => {
     }
 
     if (editorMode === 'python') {
+      // Bundle multi-file imports before sending to simulator
+      const { bundled, resolvedModules } = bundlePythonPrograms(
+        pythonCode,
+        programs,
+        currentProgramId,
+      );
+      if (resolvedModules.length > 0) {
+        addTerminalLine({
+          text: `Sim: bundled ${resolvedModules.length} module(s): ${resolvedModules.join(', ')}`,
+          type: 'info',
+          timestamp: Date.now(),
+        });
+      }
       channel.postMessage({
         type: 'SIM_RUN_PYTHON',
-        code: pythonCode,
+        code: bundled,
         sourceLabel: 'IDE Python',
       });
       addTerminalLine({
@@ -240,7 +254,7 @@ const Toolbar: React.FC = () => {
       type: 'info',
       timestamp: Date.now(),
     });
-  }, [simulationMode, editorMode, pythonCode, blocklyXml, addTerminalLine]);
+  }, [simulationMode, editorMode, pythonCode, blocklyXml, addTerminalLine, programs, currentProgramId]);
 
   const handleConnect = async () => {
     if (connectionState === 'connected') {
@@ -285,7 +299,20 @@ const Toolbar: React.FC = () => {
     }
 
     try {
-      await bleService.runProgram(pythonCode);
+      // Bundle multi-file imports before sending to hub
+      const { bundled, resolvedModules } = bundlePythonPrograms(
+        pythonCode,
+        programs,
+        currentProgramId,
+      );
+      if (resolvedModules.length > 0) {
+        addTerminalLine({
+          text: `Bundled ${resolvedModules.length} module(s): ${resolvedModules.join(', ')}`,
+          type: 'info',
+          timestamp: Date.now(),
+        });
+      }
+      await bleService.runProgram(bundled);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       addTerminalLine({
